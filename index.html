@@ -283,7 +283,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
   }
   function newBlock() { return { date: allDates()[0], whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
-  function newRule() { return { studio: '', days: [], from: '09:00', to: '13:00', cap: 2, err: '' }; }
+  function newRule() { return { id: null, studio: '', days: [], hours: {}, cap: 2, err: '' }; }
   function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
   function resetUi(view) {
     ui = { view: view, ctab: 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
@@ -311,18 +311,24 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     state.rules.forEach(function (r) { ruleDates(r).forEach(function (d) { set[d] = 1; }); });
     return Object.keys(set).sort();
   }
+  function hoursFor(r, dow) {
+    var h = r.hours && r.hours[dow];
+    return { from: h ? h.from : r.from, to: h ? h.to : r.to };
+  }
   function windowsFor(date) {
     var dow = parseISO(date).getDay(), out = [];
     out.push(HOME);
     state.rules.forEach(function (r) {
-      if (r.days.indexOf(dow) > -1) out.push({ id: r.id, loc: r.studio, from: r.from, to: r.to, cap: r.cap, open: !!state.open[r.id + '|' + date] });
+      if (r.days.indexOf(dow) > -1) { var h = hoursFor(r, dow); out.push({ id: r.id, loc: r.studio, from: h.from, to: h.to, cap: r.cap, open: !!state.open[r.id + '|' + date] }); }
     });
     return out;
   }
-  function windowObj(wid) {
+  function windowObj(wid, dow) {
     if (!wid || wid === 'home') return HOME;
     var r = state.rules.filter(function (x) { return x.id === wid; })[0];
-    return r ? { id: r.id, loc: r.studio, from: r.from, to: r.to, cap: r.cap, open: true } : HOME;
+    if (!r) return HOME;
+    var h = hoursFor(r, dow == null ? r.days[0] : dow);
+    return { id: r.id, loc: r.studio, from: h.from, to: h.to, cap: r.cap, open: true };
   }
   function winPick(date, wid) {
     var wins = windowsFor(date);
@@ -441,8 +447,13 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
   var pendingCount = function () { return state.requests.filter(function (r) { return r.status === 'pending'; }).length; };
   var capText = function (w) { return w.cap > 1 ? 'up to ' + w.cap + ' people at once' : ''; };
   function ruleLine(r) {
-    var days = WEEK.filter(function (d) { return r.days.indexOf(d) > -1; }).map(function (d) { return DAYS[d]; }).join(', ');
-    return days + ', ' + r.from + ' to ' + r.to + (r.cap > 1 ? ', up to ' + r.cap + ' people at once' : '');
+    var groups = [], idx = {};
+    WEEK.filter(function (d) { return r.days.indexOf(d) > -1; }).forEach(function (d) {
+      var h = hoursFor(r, d), k = h.from + '-' + h.to;
+      if (idx[k] === undefined) { idx[k] = groups.length; groups.push({ h: h, days: [] }); }
+      groups[idx[k]].days.push(DAYS[d]);
+    });
+    return groups.map(function (g) { return g.days.join(', ') + ' ' + g.h.from + ' to ' + g.h.to; }).join('. ') + (r.cap > 1 ? '. Up to ' + r.cap + ' people at once' : '');
   }
 
   /* ---------- header ---------- */
@@ -646,29 +657,35 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
   function studioCard() {
     var rl = ui.rule;
     var data = ' data-scope="rule"';
+    var editing = !!rl.id;
     var list = state.rules.map(function (r) {
       var chips = ruleDates(r).map(function (d) {
         var on = !!state.open[r.id + '|' + d];
         return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="toggleStudioDate" data-id="' + r.id + '" data-v="' + d + '" aria-pressed="' + on + '"><b>' + fmtDate(d) + '</b><small>' + (on ? 'Open to book' : 'Tap to open') + '</small></button>';
       }).join('');
-      return '<div class="rule"><div class="dayrow"><b>' + esc(r.studio) + '</b><span class="loc">' + esc(ruleLine(r)) + '</span><button type="button" class="link push" data-act="removeRule" data-id="' + r.id + '">Remove</button></div><div class="chips">' + chips + '</div></div>';
+      return '<div class="rule"><div class="dayrow"><b>' + esc(r.studio) + '</b><span class="push"><button type="button" class="link" data-act="editRule" data-id="' + r.id + '">Edit</button> &nbsp; <button type="button" class="link" data-act="removeRule" data-id="' + r.id + '">Remove</button></span></div><p class="loc">' + esc(ruleLine(r)) + '</p><div class="chips">' + chips + '</div></div>';
     }).join('');
     var wk = WEEK.map(function (dow) {
       var on = rl.days.indexOf(dow) > -1;
       return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="toggleDay" data-v="' + dow + '" aria-pressed="' + on + '"><b>' + DAYS[dow] + '</b></button>';
     }).join('');
+    var hoursRows = WEEK.filter(function (d) { return rl.days.indexOf(d) > -1; }).map(function (d) {
+      var h = rl.hours[d] || { from: '09:00', to: '13:00' };
+      return '<div class="row3"><div class="field"><span class="lbl">' + FULL[d] + '</span></div>' +
+        '<div class="field"><label for="s-from-' + d + '">From</label><input type="time" step="900" id="s-from-' + d + '"' + data + ' data-field="from-' + d + '" value="' + esc(h.from) + '"></div>' +
+        '<div class="field"><label for="s-to-' + d + '">Until</label><input type="time" step="900" id="s-to-' + d + '"' + data + ' data-field="to-' + d + '" value="' + esc(h.to) + '"></div></div>';
+    }).join('');
     var capOpts = [1, 2, 3, 4].map(function (n) { return '<option value="' + n + '"' + (rl.cap === n ? ' selected' : '') + '>' + n + (n === 1 ? ' person' : ' people') + '</option>'; }).join('');
     return '<section class="card"><h2>Other studios</h2>' +
-      '<p class="muted">Add the days and hours once. Then tap the dates when the studio is available to book. Your regular clients can always request other days.</p>' +
+      '<p class="muted">Set the days and hours once. Hours can be different on each day. Then tap the dates when the studio is available to book. Your regular clients can always request other days.</p>' +
       (list ? '<div class="rules">' + list + '</div>' : '') +
-      '<div class="panel"><span class="lbl">Add studio hours</span>' +
+      '<div class="panel" id="ruleform"><span class="lbl">' + (editing ? 'Edit studio hours' : 'Add studio hours') + '</span>' +
       '<div class="field"><label for="s-name">Studio name</label><input id="s-name"' + data + ' data-field="studio" value="' + esc(rl.studio) + '" placeholder="Studio X"></div>' +
       '<div class="field"><span class="lbl">Days</span><div class="chips wk">' + wk + '</div></div>' +
-      '<div class="row3"><div class="field"><label for="s-from">From</label><input type="time" step="900" id="s-from"' + data + ' data-field="from" value="' + esc(rl.from) + '"></div>' +
-      '<div class="field"><label for="s-to">Until</label><input type="time" step="900" id="s-to"' + data + ' data-field="to" value="' + esc(rl.to) + '"></div>' +
-      '<div class="field"><label for="s-cap">At the same time</label><select id="s-cap"' + data + ' data-field="cap">' + capOpts + '</select></div></div>' +
+      hoursRows +
+      '<div class="field"><label for="s-cap">At the same time</label><select id="s-cap"' + data + ' data-field="cap">' + capOpts + '</select></div>' +
       (rl.err ? '<p class="err">' + esc(rl.err) + '</p>' : '') +
-      '<div class="btns"><button type="button" class="btn primary" data-act="addRule">Add studio hours</button></div></div></section>';
+      '<div class="btns"><button type="button" class="btn primary" data-act="addRule">' + (editing ? 'Save changes' : 'Add studio hours') + '</button>' + (editing ? '<button type="button" class="btn ghost" data-act="cancelRule">Cancel</button>' : '') + '</div></div></section>';
   }
 
   function daysFor(wid) {
@@ -893,17 +910,57 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     },
     toggleDay: function (id, v) {
       var n = Number(v), i = ui.rule.days.indexOf(n);
-      if (i > -1) ui.rule.days.splice(i, 1); else ui.rule.days.push(n);
+      if (i > -1) { ui.rule.days.splice(i, 1); }
+      else {
+        ui.rule.days.push(n);
+        if (!ui.rule.hours[n]) {
+          var prev = ui.rule.days.length > 1 ? ui.rule.hours[ui.rule.days[0]] : null;
+          ui.rule.hours[n] = prev ? { from: prev.from, to: prev.to } : { from: '09:00', to: '13:00' };
+        }
+      }
       render();
     },
+    editRule: function (id) {
+      var r = state.rules.filter(function (x) { return x.id === id; })[0];
+      if (!r) return;
+      var hrs = {};
+      r.days.forEach(function (d) { var h = hoursFor(r, d); hrs[d] = { from: h.from, to: h.to }; });
+      ui.rule = { id: r.id, studio: r.studio, days: r.days.slice(), hours: hrs, cap: r.cap, err: '' };
+      render();
+      var f = document.getElementById('ruleform');
+      if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    cancelRule: function () { ui.rule = newRule(); render(); },
     addRule: function () {
       var rl = ui.rule, err = '';
       if (!rl.studio.trim()) err = 'Add the studio name.';
       else if (!rl.days.length) err = 'Pick at least one day.';
-      else if (toMin(rl.to) <= toMin(rl.from)) err = 'The end time must be after the start time.';
+      else {
+        rl.days.forEach(function (d) {
+          var h = rl.hours[d];
+          if (!err && (!h || !h.from || !h.to || toMin(h.to) <= toMin(h.from))) err = FULL[d] + ': the end time must be after the start time.';
+        });
+      }
+      var old = rl.id ? state.rules.filter(function (x) { return x.id === rl.id; })[0] : null;
+      if (!err && old) {
+        old.days.forEach(function (d) {
+          if (rl.days.indexOf(d) > -1) return;
+          var busy = state.standing.some(function (s) { return s.wid === old.id && s.dow === d; }) ||
+            state.requests.some(function (r) { return widOf(r) === old.id && (r.status === 'accepted' || r.status === 'pending' || r.status === 'proposed') && parseISO(sessionDate(r)).getDay() === d; });
+          if (!err && busy) err = FULL[d] + ' still has sessions or a weekly client, so it cannot be removed yet.';
+        });
+      }
       if (err) { rl.err = err; render(); return; }
-      state.rules.push({ id: 's' + Date.now(), studio: rl.studio.trim(), days: rl.days.slice(), from: rl.from, to: rl.to, cap: rl.cap });
-      save(); ui.rule = newRule(); render(); toast('Studio added. Tap the dates that are open to book');
+      var first0 = rl.hours[rl.days[0]];
+      var rule = { id: old ? old.id : 's' + Date.now(), studio: rl.studio.trim(), days: rl.days.slice(), hours: JSON.parse(JSON.stringify(rl.hours)), from: first0.from, to: first0.to, cap: rl.cap };
+      Object.keys(rule.hours).forEach(function (k) { if (rule.days.indexOf(Number(k)) < 0) delete rule.hours[k]; });
+      if (old) {
+        state.rules = state.rules.map(function (x) { return x.id === old.id ? rule : x; });
+        Object.keys(state.open).forEach(function (k) {
+          if (k.indexOf(old.id + '|') === 0 && rule.days.indexOf(parseISO(k.split('|')[1]).getDay()) < 0) delete state.open[k];
+        });
+      } else state.rules.push(rule);
+      save(); ui.rule = newRule(); render(); toast(old ? 'Studio hours updated' : 'Studio added. Tap the dates that are open to book');
     },
     removeRule: function (id) {
       var used = state.requests.some(function (r) {
@@ -928,7 +985,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
       save(); render();
     },
     addStanding: function () {
-      var s = ui.stand, w = windowObj(s.wid), err = '';
+      var s = ui.stand, w = windowObj(s.wid, s.dow), err = '';
       var a = toMin(s.start), z = a + s.dur;
       if (!s.name.trim()) err = 'Add the client name.';
       else if (!daysFor(s.wid).length) err = 'That studio has no days set.';
@@ -974,6 +1031,13 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
       obj.date = pr[0] || ''; obj.wid = pr[1] || '';
       if (changed) { obj.start = ''; obj.auto = true; defaultStart(); }
       if (e.type === 'change') render();
+      return;
+    }
+    var hm = sc === 'rule' && /^(from|to)-(\d)$/.exec(f || '');
+    if (hm) {
+      var dd = Number(hm[2]);
+      obj.hours[dd] = obj.hours[dd] || { from: '09:00', to: '13:00' };
+      obj.hours[dd][hm[1]] = val;
       return;
     }
     if (f === 'dur' || f === 'cap' || f === 'dow') val = Number(val);
