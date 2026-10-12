@@ -71,6 +71,9 @@ section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .dayrow b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
 .dayrow .push { margin-left: auto; }
 .loc { color: var(--ink-soft); font-size: 14px; }
+.dayhead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; width: 100%; border: 0; background: transparent; padding: 0; color: var(--ink); font: inherit; cursor: pointer; text-align: left; }
+.dayhead b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.place { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .slots { display: flex; flex-wrap: wrap; gap: 8px; }
 .slot { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); cursor: pointer; font-variant-numeric: tabular-nums; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -286,7 +289,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
   var ui;
   function newDraft() {
-    return { place: 'home', name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
+    return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, cap: 2, err: '' }; }
@@ -510,17 +513,22 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       var wins = windowsFor(d).filter(function (w) { return w.open; });
       if (!wins.length) return;
       if (wholeBlocked(d)) { rows.push({ d: d, off: true }); return; }
-      wins.forEach(function (w) { rows.push({ d: d, w: w, segs: freeSegs(d, w) }); });
+      rows.push({ d: d, items: wins.map(function (w) { return { w: w, segs: freeSegs(d, w) }; }) });
     });
+    var slotsHtml = function (d, it) {
+      var slots = it.segs.map(function (s) {
+        return '<button type="button" class="slot" data-act="pickSlot" data-v="' + d + '|' + it.w.id + '|' + s.s + '">' + fromMin(s.s) + ' to ' + fromMin(s.e) + (s.rem < it.w.cap ? ' (' + s.rem + (s.rem > 1 ? ' spots' : ' spot') + ')' : '') + '</button>';
+      }).join('');
+      return slots ? '<div class="slots">' + slots + '</div>' : '<p class="muted">Fully booked</p>';
+    };
     var groups = groupWeeks(rows, function (r) { return r.d; });
     var body = groups.map(function (g) {
       return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(function (r) {
         if (r.off) return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(r.d) + '</b><span class="loc">Not available</span></div></div>';
-        var slots = r.segs.map(function (s) {
-          return '<button type="button" class="slot" data-act="pickSlot" data-v="' + r.d + '|' + r.w.id + '|' + s.s + '">' + fromMin(s.s) + ' to ' + fromMin(s.e) + (s.rem < r.w.cap ? ' (' + s.rem + (s.rem > 1 ? ' spots' : ' spot') + ')' : '') + '</button>';
-        }).join('');
-        return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(r.d) + '</b><span class="loc">' + esc(r.w.loc) + (r.w.cap > 1 ? ', ' + capText(r.w) : '') + '</span></div>' +
-          (slots ? '<div class="slots">' + slots + '</div>' : '<p class="muted">Fully booked</p>') + '</div>';
+        if (r.items.length === 1) return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(r.d) + '</b></div>' + slotsHtml(r.d, r.items[0]) + '</div>';
+        var open = ui.openDay === r.d;
+        return '<div class="daycard"><button type="button" class="dayhead" data-act="openDay" data-v="' + r.d + '" aria-expanded="' + open + '"><b>' + fmtDate(r.d) + '</b><span class="loc">' + (open ? 'Hide' : 'Tap to choose where') + '</span></button>' +
+          (open ? r.items.map(function (it) { return '<div class="place"><p class="loc">' + esc(it.w.loc) + (it.w.cap > 1 ? ', ' + capText(it.w) : '') + '</p>' + slotsHtml(r.d, it) + '</div>'; }).join('') : '') + '</div>';
       }).join('') + '</section>';
     }).join('');
     return '<section><h2>Free times</h2><p class="muted">Tap a time to request it. Michela confirms every request.' +
@@ -530,20 +538,22 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   function formView() {
     var d = ui.draft;
     var allOpts = slotOptions(d.phone);
-    var places = [{ id: 'home', loc: HOME.loc }].concat(state.rules.map(function (r) { return { id: r.id, loc: r.studio }; }));
-    if (!places.some(function (x) { return x.id === d.place; })) d.place = 'home';
-    if (d.date && d.wid && d.wid !== d.place) d.place = d.wid;
-    var opts = allOpts.filter(function (o) { return o.win.id === d.place; });
-    var cur = d.date + '|' + d.wid;
-    if (d.date && !opts.some(function (o) { return o.date + '|' + o.win.id === cur; })) { d.date = ''; d.wid = ''; d.start = ''; d.auto = true; cur = '|'; }
+    var dates = [];
+    allOpts.forEach(function (o) { if (dates.indexOf(o.date) < 0) dates.push(o.date); });
+    if (d.date && dates.indexOf(d.date) < 0) { d.date = ''; d.wid = ''; d.start = ''; d.auto = true; }
+    var dayOpts = allOpts.filter(function (o) { return o.date === d.date; });
+    if (d.date && !dayOpts.some(function (o) { return o.win.id === d.wid; })) {
+      d.wid = dayOpts[0] ? dayOpts[0].win.id : ''; d.start = ''; d.auto = true; defaultStart();
+    }
     var win = d.date ? winPick(d.date, d.wid) : null;
-    var selOpts = '<option value="|">' + (opts.length ? 'Choose a day' : 'No open days yet') + '</option>' + opts.map(function (o) {
-      var v = o.date + '|' + o.win.id;
-      return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(fmtDate(o.date)) + '</option>';
+    var selOpts = '<option value="">Choose a day</option>' + dates.map(function (x) {
+      return '<option value="' + x + '"' + (x === d.date ? ' selected' : '') + '>' + esc(fmtDate(x)) + '</option>';
     }).join('');
+    var whereHtml = dayOpts.length > 1 ? '<div class="field"><label for="f-wid">Where</label><select id="f-wid" data-scope="draft" data-field="wid" data-rerender>' + dayOpts.map(function (o) {
+      return '<option value="' + esc(o.win.id) + '"' + (o.win.id === d.wid ? ' selected' : '') + '>' + esc(o.win.loc) + '</option>';
+    }).join('') + '</select></div>' : '';
     var hint = '';
-    if (!opts.length) hint = '<p class="hint">There are no open days at ' + esc((places.filter(function (x) { return x.id === d.place; })[0] || {}).loc || 'this studio') + ' yet. Michela opens them as she gets them. Check back soon, or pick another place.</p>';
-    else if (win) {
+    if (win) {
       var fs = freeSegs(d.date, win).map(function (g) { return fromMin(g.s) + ' to ' + fromMin(g.e); });
       hint = '<p class="hint">' + (win.open ? 'Free: ' + (fs.length ? esc(fs.join(', ')) : 'nothing') + (win.cap > 1 ? '. ' + esc(win.loc) + ' fits ' + win.cap + ' people at the same time.' : '.') : 'This day is not listed yet. Michela will check with the studio.') + '</p>';
     }
@@ -557,9 +567,9 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       '<div class="row2"><div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
       '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
       '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message when Michela replies)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div>' +
-      (places.length > 1 ? '<div class="field"><label for="f-place">Where</label><select id="f-place" data-scope="draft" data-field="place" data-rerender>' + places.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === d.place ? ' selected' : '') + '>' + esc(x.loc) + '</option>'; }).join('') + '</select></div>' : '') +
-      '<div class="field"><label for="f-slot">Day</label><select id="f-slot" data-scope="draft" data-field="slot" data-rerender>' + selOpts + '</select>' +
-      (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + hint + '</div>' +
+      '<div class="field"><label for="f-day">Day</label><select id="f-day" data-scope="draft" data-field="day" data-rerender>' + selOpts + '</select>' +
+      (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + '</div>' +
+      whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') +
       '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
       '<div class="field"><span class="lbl">How long do you usually take?</span><div class="chips dur">' + durChips(d.dur) + '</div>' + ends + '</div>' +
       '<div class="field"><label for="f-note">Note for Michela <span class="opt">(optional, for example if you could come earlier or later)</span></label><textarea id="f-note" data-scope="draft" data-field="note" placeholder="I can also come up to an hour earlier or later">' + esc(d.note) + '</textarea></div>' +
@@ -844,9 +854,10 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     mtab: function (id, v) { ui.mtab = v; render(); window.scrollTo(0, 0); },
     pickSlot: function (id, v) {
       var p = v.split('|');
-      ui.draft.date = p[0]; ui.draft.wid = p[1]; ui.draft.place = p[1]; ui.draft.start = fromMin(Number(p[2])); ui.draft.auto = false; ui.draft.err = '';
+      ui.draft.date = p[0]; ui.draft.wid = p[1]; ui.draft.start = fromMin(Number(p[2])); ui.draft.auto = false; ui.draft.err = '';
       ui.ctab = 'request'; ui.sent = null; render(); window.scrollTo(0, 0);
     },
+    openDay: function (id, v) { ui.openDay = ui.openDay === v ? null : v; render(); },
     pickDur: function (id, v) { ui.draft.dur = Number(v); render(); },
     submit: function () {
       var d = ui.draft;
@@ -1043,17 +1054,13 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     if (!obj) return;
     var f = t.dataset.field;
     var val = t.type === 'checkbox' ? t.checked : t.value;
-    if (sc === 'draft' && f === 'place') {
-      obj.place = val; obj.date = ''; obj.wid = ''; obj.start = ''; obj.auto = true;
+    if (sc === 'draft' && f === 'day') {
+      obj.date = val; obj.wid = ''; obj.start = ''; obj.auto = true;
       if (e.type === 'change') render();
       return;
     }
-    if (sc === 'draft' && f === 'slot') {
-      var pr = val.split('|');
-      var changed = obj.date !== (pr[0] || '') || obj.wid !== (pr[1] || '');
-      obj.date = pr[0] || ''; obj.wid = pr[1] || '';
-      if (obj.wid) obj.place = obj.wid;
-      if (changed) { obj.start = ''; obj.auto = true; defaultStart(); }
+    if (sc === 'draft' && f === 'wid') {
+      obj.wid = val; obj.start = ''; obj.auto = true; defaultStart();
       if (e.type === 'change') render();
       return;
     }
