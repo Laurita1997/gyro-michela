@@ -530,20 +530,20 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   function formView() {
     var d = ui.draft;
     var allOpts = slotOptions(d.phone);
-    var places = [];
-    allOpts.forEach(function (o) { if (!places.some(function (x) { return x.id === o.win.id; })) places.push({ id: o.win.id, loc: o.win.loc }); });
-    if (!places.some(function (x) { return x.id === d.place; })) d.place = places.length ? places[0].id : 'home';
+    var places = [{ id: 'home', loc: HOME.loc }].concat(state.rules.map(function (r) { return { id: r.id, loc: r.studio }; }));
+    if (!places.some(function (x) { return x.id === d.place; })) d.place = 'home';
     if (d.date && d.wid && d.wid !== d.place) d.place = d.wid;
     var opts = allOpts.filter(function (o) { return o.win.id === d.place; });
     var cur = d.date + '|' + d.wid;
     if (d.date && !opts.some(function (o) { return o.date + '|' + o.win.id === cur; })) { d.date = ''; d.wid = ''; d.start = ''; d.auto = true; cur = '|'; }
     var win = d.date ? winPick(d.date, d.wid) : null;
-    var selOpts = '<option value="|">Choose a day</option>' + opts.map(function (o) {
+    var selOpts = '<option value="|">' + (opts.length ? 'Choose a day' : 'No open days yet') + '</option>' + opts.map(function (o) {
       var v = o.date + '|' + o.win.id;
       return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(fmtDate(o.date)) + '</option>';
     }).join('');
     var hint = '';
-    if (win) {
+    if (!opts.length) hint = '<p class="hint">There are no open days at ' + esc((places.filter(function (x) { return x.id === d.place; })[0] || {}).loc || 'this studio') + ' yet. Michela opens them as she gets them. Check back soon, or pick another place.</p>';
+    else if (win) {
       var fs = freeSegs(d.date, win).map(function (g) { return fromMin(g.s) + ' to ' + fromMin(g.e); });
       hint = '<p class="hint">' + (win.open ? 'Free: ' + (fs.length ? esc(fs.join(', ')) : 'nothing') + (win.cap > 1 ? '. ' + esc(win.loc) + ' fits ' + win.cap + ' people at the same time.' : '.') : 'This day is not listed yet. Michela will check with the studio.') + '</p>';
     }
