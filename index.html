@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Sign Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=Figtree:wght@400;500;600&display=swap">
+<style>
+/* Layout: one calm column. Clients get three tabs: Free times, Request, My requests. Michela gets Requests, Schedule, Setup. Free times are plain tappable slots grouped by week. */
+:root {
+  --ground: #EDF1EF;
+  --surface: #FAFCFB;
+  --ink: #16262B;
+  --ink-soft: #52666B;
+  --line: #D3DCDA;
+  --accent: #1D6B68;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #D6E8E5;
+  --pending: #8A5E0E;
+  --pending-soft: #F4E7C8;
+  --ok: #24703F;
+  --ok-soft: #D7EBDD;
+  --bad: #A33A3A;
+  --bad-soft: #F3DADA;
+  --font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #0F1A1C; --surface: #16252A; --ink: #E6EEEC; --ink-soft: #96A9AD; --line: #2A3C41;
+    --accent: #5FBDB6; --accent-ink: #07201F; --accent-soft: #1D3B3B;
+    --pending: #E3B24F; --pending-soft: #3A2E12; --ok: #6FCB93; --ok-soft: #173324;
+    --bad: #E68A8A; --bad-soft: #3B1D1D;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #0F1A1C; --surface: #16252A; --ink: #E6EEEC; --ink-soft: #96A9AD; --line: #2A3C41;
+  --accent: #5FBDB6; --accent-ink: #07201F; --accent-soft: #1D3B3B;
+  --pending: #E3B24F; --pending-soft: #3A2E12; --ok: #6FCB93; --ok-soft: #173324;
+  --bad: #E68A8A; --bad-soft: #3B1D1D;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font: 400 16px/1.5 var(--font-body); }
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 96px; display: flex; flex-direction: column; gap: 18px; }
+.wrap > * { min-width: 0; }
+h1, h2 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: 28px; line-height: 1.1; font-weight: 600; }
+h2 { font-size: 19px; line-height: 1.25; font-weight: 600; }
+p { margin: 0; }
+.sub { color: var(--ink-soft); margin-top: 4px; font-size: 15px; }
+.muted { color: var(--ink-soft); font-size: 14px; }
+.titlebar { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.top { display: flex; flex-direction: column; gap: 14px; }
+.switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.switch button { border: 0; background: transparent; color: var(--ink-soft); padding: 9px 12px; border-radius: 9px; font: 600 15px var(--font-body); cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.tabs button { border: 0; background: transparent; color: var(--ink-soft); font: 600 16px var(--font-body); padding: 10px 0; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tabs button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.badge { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--ink); color: var(--surface); font-size: 12px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.proto { font-size: 13px; color: var(--ink-soft); }
+section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.wkh { margin: 0; font: 600 12px var(--font-body); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+.daycard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.dayrow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.dayrow b { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.dayrow .push { margin-left: auto; }
+.loc { color: var(--ink-soft); font-size: 14px; }
+.slots { display: flex; flex-wrap: wrap; gap: 8px; }
+.slot { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--ink); border-radius: 999px; padding: 8px 14px; font: 600 14px var(--font-body); cursor: pointer; font-variant-numeric: tabular-nums; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+label, .lbl { font-weight: 600; font-size: 14px; }
+.opt { font-weight: 400; color: var(--ink-soft); }
+input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--ground); color: var(--ink); font: 400 16px var(--font-body); min-width: 0; }
+textarea { resize: vertical; min-height: 76px; }
+input[type="checkbox"] { width: 20px; height: 20px; padding: 0; accent-color: var(--accent); }
+input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; max-width: 100%; min-height: 46px; text-align: left; }
+input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+.check { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.row3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.chips.dur { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+.chips.wk { grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+.chip { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 10px; font: 600 15px var(--font-body); text-align: left; cursor: pointer; min-width: 0; }
+.chip small { color: var(--ink-soft); font-size: 12px; font-weight: 400; }
+.chip.on { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { padding: 11px 16px; border-radius: 10px; border: 1px solid transparent; font: 600 15px var(--font-body); cursor: pointer; text-decoration: none; display: inline-block; }
+.btn.small { padding: 7px 14px; font-size: 14px; flex: none; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn.ghost { background: transparent; color: var(--ink-soft); border-color: var(--line); }
+.btn.danger { background: transparent; color: var(--bad); border-color: var(--line); }
+.link { border: 0; background: transparent; color: var(--accent); font: 600 14px var(--font-body); cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
+.pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+.pill.pending { background: var(--pending-soft); color: var(--pending); }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.info { background: var(--accent-soft); color: var(--accent); }
+.pill.quiet { background: var(--ground); color: var(--ink-soft); border: 1px solid var(--line); }
+.tag { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.ex { font-size: 12px; font-weight: 400; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; }
+.banner { padding: 12px 14px; border-radius: 12px; font-weight: 500; }
+.banner.ok { background: var(--ok-soft); color: var(--ok); }
+.err { color: var(--bad); font-weight: 500; }
+.warn { margin: 0; padding: 10px 12px 10px 30px; border-radius: 10px; background: var(--pending-soft); color: var(--pending); font-size: 14px; }
+.warnline { padding: 10px 12px; border-radius: 10px; background: var(--pending-soft); color: var(--pending); font-size: 14px; }
+.hint { font-size: 14px; color: var(--ink-soft); padding: 8px 12px; border-radius: 10px; background: var(--ground); }
+.req { display: flex; flex-direction: column; gap: 10px; }
+.req-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.req-name { font-family: var(--font-display); font-size: 18px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.line { font-weight: 500; font-variant-numeric: tabular-nums; }
+.quote { border-left: 3px solid var(--line); padding-left: 12px; color: var(--ink-soft); }
+.sel { user-select: all; font-variant-numeric: tabular-nums; }
+.panel { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 12px; background: var(--ground); }
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+.items li { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.items .t { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 8em; }
+.rules > .rule { display: flex; flex-direction: column; gap: 10px; padding-block: 14px; border-top: 1px solid var(--line); }
+.rules > .rule:first-child { border-top: 0; padding-top: 0; }
+.foot { display: flex; justify-content: flex-start; }
+#toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 500; opacity: 0; pointer-events: none; }
+#toast.on { opacity: 1; }
+@media (prefers-reduced-motion: no-preference) { #toast { transition: opacity 0.2s ease; } }
+</style>
+
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'studio-signup-me-v1';
+  var CODE_KEY = 'studio-signup-code-v1';
+  var API = 'https://khzapfmsvtwyxenyshvx.supabase.co/functions/v1/api';
+  var DUR = [60, 90, 120, 150, 180];
+  var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var WEEK = [1, 2, 3, 4, 5, 6, 0];
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var HOME = { id: 'home', loc: "Michela's studio", from: '09:00', to: '21:00', cap: 1, open: true };
+
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var iso = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parseISO = function (s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  var fmtDate = function (s) { var d = parseISO(s); return DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()]; };
+  var fmtDur = function (m) { var h = Math.floor(m / 60), r = m % 60; return r ? h + ':' + pad(r) + 'h' : h + 'h'; };
+  var toMin = function (t) { var p = t.split(':').map(Number); return p[0] * 60 + p[1]; };
+  var fromMin = function (n) { return pad(Math.floor(n / 60)) + ':' + pad(n % 60); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var digits = function (s) { return String(s || '').replace(/\D/g, ''); };
+  var samePhone = function (a, b) { return digits(a) && digits(a) === digits(b); };
+  var first = function (n) { return String(n || '').split(' ')[0]; };
+
+  function weekendDays(count) {
+    var out = [];
+    var d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    while (out.length < count) {
+      out.push(iso(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }
+  function horizon() { var w = weekendDays(28); return w[w.length - 1]; }
+  function ruleDates(rule) {
+    var out = [], last = horizon(), d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 1);
+    while (iso(d) <= last) {
+      if (rule.days.indexOf(d.getDay()) > -1) out.push(iso(d));
+      d.setDate(d.getDate() + 1);
+    }
+    return out;
+  }
+  function weekLabel(dateStr) {
+    var m = parseISO(dateStr), dow = (m.getDay() + 6) % 7;
+    m.setDate(m.getDate() - dow);
+    var s = new Date(m); s.setDate(m.getDate() + 6);
+    return m.getMonth() === s.getMonth()
+      ? m.getDate() + ' to ' + s.getDate() + ' ' + MONTHS[s.getMonth()]
+      : m.getDate() + ' ' + MONTHS[m.getMonth()] + ' to ' + s.getDate() + ' ' + MONTHS[s.getMonth()];
+  }
+  function groupWeeks(items, getDate) {
+    var groups = [], idx = {};
+    items.forEach(function (it) {
+      var label = weekLabel(getDate(it));
+      if (idx[label] === undefined) { idx[label] = groups.length; groups.push({ label: label, items: [] }); }
+      groups[idx[label]].items.push(it);
+    });
+    return groups;
+  }
+
+  function loadMe() {
+    try {
+      var s = localStorage.getItem(KEY);
+      if (s) { var p = JSON.parse(s); if (p && p.me) return p.me; }
+    } catch (e) { /* storage unavailable */ }
+    return { name: '', phone: '', email: '', dur: 60 };
+  }
+  function saveMe() { try { localStorage.setItem(KEY, JSON.stringify({ me: state.me })); } catch (e) { /* ignore */ } }
+
+  function api(body) {
+    return fetch(API, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) {
+        return r.json().catch(function () { return { error: 'Unexpected answer from the server.' }; }).then(function (j) {
+          if (!r.ok || j.error) throw new Error(j.error || 'Something went wrong.');
+          return j;
+        });
+      }, function () { throw new Error('No connection. Please try again.'); });
+  }
+  var snap = {};
+  function syncSnap() { snap = {}; state.requests.forEach(function (r) { snap[r.id] = JSON.stringify(r); }); }
+  function applyData(d) {
+    ['rules', 'open', 'standing', 'skips', 'blocks', 'requests'].forEach(function (k) { if (d[k] !== undefined) state[k] = d[k]; });
+    if (d.regularFor !== undefined) state.regularFor = d.regularFor;
+    state.loaded = true; state.loadErr = '';
+    syncSnap();
+  }
+  function stamp() {
+    state.requests.forEach(function (r) { if (snap[r.id] !== JSON.stringify(r)) r.upd = Date.now(); });
+  }
+  var saving = false, again = false, pendingCode = null;
+  function save(opts) {
+    saveMe();
+    if (!state.unlocked) return;
+    if (opts && opts.newCode) pendingCode = opts.newCode;
+    stamp();
+    if (saving) { again = true; return; }
+    push();
+  }
+  function push() {
+    saving = true;
+    var nc = pendingCode; pendingCode = null;
+    var body = { action: 'save', code: state.code, data: { rules: state.rules, open: state.open, standing: state.standing, skips: state.skips, blocks: state.blocks, requests: state.requests } };
+    if (nc) body.new_code = nc;
+    api(body).then(function (j) {
+      if (nc) { state.code = nc; try { sessionStorage.setItem(CODE_KEY, nc); } catch (e) { /* ignore */ } toast('Code changed'); }
+      saving = false;
+      if (again) { again = false; stamp(); push(); return; }
+      applyData(j.data); render();
+    }).catch(function (e) {
+      saving = false; again = false;
+      toast(e.message || 'Could not save. Please try again.');
+      refresh(true);
+    });
+  }
+  function refresh(quiet) {
+    var p = state.unlocked ? api({ action: 'login', code: state.code }) : api({ action: 'public', phone: state.me.phone });
+    return p.then(function (j) {
+      if (saving) return;
+      var d = state.unlocked ? j.data : j;
+      var before = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor]);
+      var wasLoaded = state.loaded;
+      applyData(d);
+      var after = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor]);
+      var ae = document.activeElement;
+      var typing = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
+      if (!wasLoaded || before !== after || !quiet) { if (!(quiet && typing)) render(); }
+    }).catch(function (e) {
+      if (!state.loaded) { state.loadErr = e.message || 'Could not load.'; render(); }
+      else if (!quiet) toast(e.message);
+    });
+  }
+
+  var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
+  var ui;
+  function newDraft() {
+    return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
+  }
+  function newBlock() { return { date: allDates()[0], whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
+  function newRule() { return { studio: '', days: [], from: '09:00', to: '13:00', cap: 2, err: '' }; }
+  function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
+  function resetUi(view) {
+    ui = { view: view, ctab: 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
+    ui.draft = newDraft(); ui.block = newBlock(); ui.rule = newRule(); ui.stand = newStand();
+  }
+
+  var app = document.getElementById('app');
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2800);
+  }
+
+  /* ---------- schedule model ---------- */
+  var sessionDate = function (r) { return r.fdate || r.date; };
+  var widOf = function (r) { return r.wid || 'home'; };
+  var locOfReq = function (r) { return r.loc || HOME.loc; };
+
+  function allDates() {
+    var set = {};
+    weekendDays(28).forEach(function (d) { set[d] = 1; });
+    state.rules.forEach(function (r) { ruleDates(r).forEach(function (d) { set[d] = 1; }); });
+    return Object.keys(set).sort();
+  }
+  function windowsFor(date) {
+    var dow = parseISO(date).getDay(), out = [];
+    out.push(HOME);
+    state.rules.forEach(function (r) {
+      if (r.days.indexOf(dow) > -1) out.push({ id: r.id, loc: r.studio, from: r.from, to: r.to, cap: r.cap, open: !!state.open[r.id + '|' + date] });
+    });
+    return out;
+  }
+  function windowObj(wid) {
+    if (!wid || wid === 'home') return HOME;
+    var r = state.rules.filter(function (x) { return x.id === wid; })[0];
+    return r ? { id: r.id, loc: r.studio, from: r.from, to: r.to, cap: r.cap, open: true } : HOME;
+  }
+  function winPick(date, wid) {
+    var wins = windowsFor(date);
+    return wins.filter(function (w) { return w.id === wid; })[0] || wins[0] || windowObj(wid);
+  }
+  function wholeBlocked(date) { return state.blocks.some(function (b) { return b.date === date && b.whole; }); }
+  function sessionsIn(date, win) {
+    var list = state.requests.filter(function (r) { return r.status === 'accepted' && sessionDate(r) === date && widOf(r) === win.id; });
+    var dow = parseISO(date).getDay();
+    state.standing.forEach(function (s) {
+      if (s.wid === win.id && s.dow === dow && !state.skips[s.id + '|' + date]) {
+        list.push({ id: 'st-' + s.id + '-' + date, standing: true, sid: s.id, name: s.name, start: s.start, fdur: s.dur });
+      }
+    });
+    return list.sort(function (a, b) { return toMin(a.start) - toMin(b.start); });
+  }
+  var pendingFor = function (date, win) {
+    return state.requests.some(function (r) { return (r.status === 'pending' || r.status === 'proposed') && r.date === date && widOf(r) === win.id; });
+  };
+  function knownClient(phone, exceptId) {
+    if (!digits(phone)) return false;
+    if (!state.unlocked) return samePhone(state.regularFor, phone);
+    return state.requests.some(function (r) { return r.id !== exceptId && r.status === 'accepted' && samePhone(r.phone, phone); }) ||
+      state.standing.some(function (s) { return s.phone && samePhone(s.phone, phone); });
+  }
+  function slotOptions(phone) {
+    var reg = knownClient(phone), out = [];
+    allDates().forEach(function (d) {
+      if (wholeBlocked(d)) return;
+      windowsFor(d).forEach(function (w) { if (w.open || reg) out.push({ date: d, win: w }); });
+    });
+    return out;
+  }
+
+  /* Walk the window in 15 minute steps and group steps with the same number of open spots. */
+  function segments(date, win) {
+    var S = toMin(win.from), E = toMin(win.to), cap = win.cap, segs = [], cur = null;
+    var sess = sessionsIn(date, win);
+    var blks = state.blocks.filter(function (b) { return b.date === date; });
+    for (var t = S; t < E; t += 15) {
+      var rem;
+      var blocked = blks.some(function (b) {
+        var a = b.whole ? 0 : toMin(b.from), z = b.whole ? 1440 : toMin(b.to);
+        return t < z && t + 15 > a;
+      });
+      if (blocked) {
+        rem = 0;
+      } else {
+        var buf = cap === 1 ? 15 : 0;
+        var used = sess.filter(function (r) {
+          var a = toMin(r.start), z = a + r.fdur;
+          return t < z + buf && t + 15 > a - buf;
+        }).length;
+        rem = Math.max(0, cap - used);
+      }
+      if (cur && cur.rem === rem) { cur.e = t + 15; } else { cur = { s: t, e: t + 15, rem: rem }; segs.push(cur); }
+    }
+    return segs;
+  }
+  function freeSegs(date, win) {
+    return segments(date, win).filter(function (g) { return g.rem > 0 && g.e - g.s >= 60; });
+  }
+
+  function conflicts(date, start, dur, ignoreId, win) {
+    var out = [];
+    if (!start) return out;
+    win = win || winPick(date, 'home');
+    var s = toMin(start), e = s + dur;
+    if (s < toMin(win.from) || e > toMin(win.to)) out.push('Outside the hours at ' + win.loc + ' (' + win.from + ' to ' + win.to + ')');
+    var cap = win.cap, buf = cap === 1 ? 15 : 0, full = false;
+    var sess = sessionsIn(date, win).filter(function (r) { return r.id !== ignoreId; });
+    for (var t = s; t < e && !full; t += 15) {
+      var used = sess.filter(function (r) {
+        var a = toMin(r.start), z = a + r.fdur;
+        return t < z + buf && t + 15 > a - buf;
+      }).length;
+      if (used >= cap) full = true;
+    }
+    if (full) out.push(cap === 1 ? 'Clashes with another session (15 min break included)' : 'Both spots are taken at that time');
+    state.blocks.forEach(function (b) {
+      if (b.date !== date) return;
+      var a = b.whole ? 0 : toMin(b.from), z = b.whole ? 1440 : toMin(b.to);
+      if (s < z && e > a) out.push('This time is closed');
+    });
+    return out;
+  }
+
+  var wantLine = function (r) {
+    return fmtDate(r.date) + ', ' + r.reqStart + ' to ' + fromMin(toMin(r.reqStart) + r.dur) + ' (' + fmtDur(r.dur) + ')';
+  };
+  var sessLine = function (date, start, dur) { return fmtDate(date) + ', ' + start + ' to ' + fromMin(toMin(start) + dur) + ' (' + fmtDur(dur) + ')'; };
+  function gcal(r) {
+    var d = sessionDate(r).replace(/-/g, '');
+    var s = toMin(r.start), e = s + r.fdur;
+    var f = function (n) { return pad(Math.floor(n / 60)) + pad(n % 60) + '00'; };
+    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Gyro with Michela') + '&location=' + encodeURIComponent(locOfReq(r)) + '&dates=' + d + 'T' + f(s) + '/' + d + 'T' + f(e);
+  }
+  var pill = function (kind, text) { return '<span class="pill ' + kind + '">' + esc(text) + '</span>'; };
+  var durChips = function (sel) {
+    return DUR.map(function (m) {
+      var on = m === sel;
+      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="pickDur" data-v="' + m + '" aria-pressed="' + on + '"><b>' + fmtDur(m) + '</b></button>';
+    }).join('');
+  };
+  var durOptions = function (sel) {
+    return DUR.map(function (m) { return '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + fmtDur(m) + '</option>'; }).join('');
+  };
+  function dateTag(date) {
+    var s = windowsFor(date).filter(function (w) { return w.id !== 'home'; }).map(function (w) { return w.loc; });
+    return s.length ? ' (' + s.join(', ') + ')' : '';
+  }
+  var dateOptions = function (sel) {
+    return allDates().map(function (d) { return '<option value="' + d + '"' + (d === sel ? ' selected' : '') + '>' + esc(fmtDate(d) + dateTag(d)) + '</option>'; }).join('');
+  };
+  var warnHtml = function (list) { return list.length ? '<ul class="warn">' + list.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : ''; };
+  var pendingCount = function () { return state.requests.filter(function (r) { return r.status === 'pending'; }).length; };
+  var capText = function (w) { return w.cap > 1 ? 'up to ' + w.cap + ' people at once' : ''; };
+  function ruleLine(r) {
+    var days = WEEK.filter(function (d) { return r.days.indexOf(d) > -1; }).map(function (d) { return DAYS[d]; }).join(', ');
+    return days + ', ' + r.from + ' to ' + r.to + (r.cap > 1 ? ', up to ' + r.cap + ' people at once' : '');
+  }
+
+  /* ---------- header ---------- */
+  function head() {
+    var title = '<div class="titlebar"><div><h1>Gyro with Michela</h1><p class="sub">Sessions at Michela\'s studio and at another studio. Send a request and she replies.</p></div>' +
+      (state.unlocked ? '' : '<button type="button" class="btn ghost small" data-act="openCode" aria-label="Michela login">Michela</button>') + '</div>';
+    var nav = state.unlocked ? '<div class="switch" role="group" aria-label="Switch view">' +
+      '<button type="button" data-act="view" data-v="client" aria-pressed="' + (ui.view === 'client') + '">Client view</button>' +
+      '<button type="button" data-act="view" data-v="michela" aria-pressed="' + (ui.view === 'michela') + '">Michela\'s view</button></div>' : '';
+    return '<header class="top">' + title + nav +
+      '</header>';
+  }
+
+  /* ---------- client view ---------- */
+  function reqCardClient(r) {
+    var status = '', body = '', actions = '';
+    var where = function (loc) { return '<p class="muted">' + esc(loc) + '</p>'; };
+    if (r.status === 'pending') {
+      status = pill('pending', 'Waiting for Michela');
+      body = '<p class="line">' + esc(wantLine(r)) + '</p>' + where(locOfReq(r)) + (winPick(r.date, widOf(r)).open ? '' : '<p class="muted">Michela will check with the studio.</p>');
+      actions = '<button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel request</button>';
+    } else if (r.status === 'accepted') {
+      status = pill('ok', 'Confirmed');
+      body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
+      actions = '<a class="btn secondary" href="' + gcal(r) + '" target="_blank" rel="noopener">Add to Google Calendar</a>';
+    } else if (r.status === 'proposed') {
+      var p = r.proposal;
+      status = pill('info', 'Michela suggests another time');
+      body = '<p class="line">' + esc(sessLine(p.date, p.start, p.dur)) + '</p>' + where(p.loc || HOME.loc) + (p.msg ? '<p class="quote">' + esc(p.msg) + '</p>' : '') + '<p class="muted">You asked for: ' + esc(wantLine(r)) + '</p>';
+      actions = '<button type="button" class="btn primary" data-act="acceptProposal" data-id="' + r.id + '">Accept this time</button><button type="button" class="btn ghost" data-act="declineProposal" data-id="' + r.id + '">No thanks</button>';
+    } else if (r.status === 'declined') {
+      status = pill('bad', 'Not possible');
+      body = '<p class="line">' + esc(wantLine(r)) + '</p>' + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '<p class="muted">Michela cannot do this one. You can send a new request for another day.</p>');
+    } else {
+      status = pill('quiet', 'Cancelled');
+      body = '<p class="muted">' + esc(wantLine(r)) + '</p>';
+    }
+    return '<div class="card req"><div class="req-head">' + status + '</div>' + body + (actions ? '<div class="btns">' + actions + '</div>' : '') + '</div>';
+  }
+
+  function freeView() {
+    var rows = [];
+    allDates().forEach(function (d) {
+      var wins = windowsFor(d).filter(function (w) { return w.open; });
+      if (!wins.length) return;
+      if (wholeBlocked(d)) { rows.push({ d: d, off: true }); return; }
+      wins.forEach(function (w) { rows.push({ d: d, w: w, segs: freeSegs(d, w) }); });
+    });
+    var groups = groupWeeks(rows, function (r) { return r.d; });
+    var body = groups.map(function (g) {
+      return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(function (r) {
+        if (r.off) return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(r.d) + '</b><span class="loc">Not available</span></div></div>';
+        var slots = r.segs.map(function (s) {
+          return '<button type="button" class="slot" data-act="pickSlot" data-v="' + r.d + '|' + r.w.id + '|' + s.s + '">' + fromMin(s.s) + ' to ' + fromMin(s.e) + (s.rem < r.w.cap ? ' (' + s.rem + (s.rem > 1 ? ' spots' : ' spot') + ')' : '') + '</button>';
+        }).join('');
+        return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(r.d) + '</b><span class="loc">' + esc(r.w.loc) + (r.w.cap > 1 ? ', ' + capText(r.w) : '') + '</span></div>' +
+          (slots ? '<div class="slots">' + slots + '</div>' : '<p class="muted">Fully booked</p>') + '</div>';
+      }).join('') + '</section>';
+    }).join('');
+    return '<section><h2>Free times</h2><p class="muted">Tap a time to request it. Michela confirms every request.' +
+      (state.rules.length ? ' Regular clients can also request other studio days on the Request tab.' : '') + '</p></section>' + body;
+  }
+
+  function formView() {
+    var d = ui.draft;
+    var opts = slotOptions(d.phone);
+    var cur = d.date + '|' + d.wid;
+    if (d.date && !opts.some(function (o) { return o.date + '|' + o.win.id === cur; })) { d.date = ''; d.wid = ''; d.start = ''; d.auto = true; cur = '|'; }
+    var win = d.date ? winPick(d.date, d.wid) : null;
+    var selOpts = '<option value="|">Choose a day</option>' + opts.map(function (o) {
+      var v = o.date + '|' + o.win.id;
+      return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(fmtDate(o.date) + ', ' + o.win.loc) + '</option>';
+    }).join('');
+    var hint = '';
+    if (win) {
+      var fs = freeSegs(d.date, win).map(function (g) { return fromMin(g.s) + ' to ' + fromMin(g.e); });
+      hint = '<p class="hint">' + (win.open ? 'Free: ' + (fs.length ? esc(fs.join(', ')) : 'nothing') + (win.cap > 1 ? '. ' + esc(win.loc) + ' fits ' + win.cap + ' people at the same time.' : '.') : 'This day is not listed yet. Michela will check with the studio.') + '</p>';
+    }
+    var ends = '';
+    if (d.start) {
+      ends = '<p class="muted">Ends at ' + fromMin(toMin(d.start) + d.dur) + '</p>';
+      if (win && conflicts(d.date, d.start, d.dur, null, win).length) ends += '<p class="warnline">That overlaps a booked or closed time. You can still send it, and Michela may suggest another time.</p>';
+    }
+    var reg = knownClient(d.phone) && state.rules.length;
+    return '<section class="card" id="requestform"><h2>Request a session</h2>' +
+      '<div class="row2"><div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
+      '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
+      '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message when Michela replies)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div>' +
+      '<div class="field"><label for="f-slot">Day</label><select id="f-slot" data-scope="draft" data-field="slot" data-rerender>' + selOpts + '</select>' +
+      (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + hint + '</div>' +
+      '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
+      '<div class="field"><span class="lbl">How long do you usually take?</span><div class="chips dur">' + durChips(d.dur) + '</div>' + ends + '</div>' +
+      '<div class="field"><label for="f-note">Note for Michela <span class="opt">(optional, for example if you could come earlier or later)</span></label><textarea id="f-note" data-scope="draft" data-field="note" placeholder="I can also come up to an hour earlier or later">' + esc(d.note) + '</textarea></div>' +
+      (d.err ? '<p class="err">' + esc(d.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="submit">Send request</button></div></section>';
+  }
+
+  function mineView() {
+    var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone); })
+      .sort(function (a, b) { return b.created - a.created; }).slice(0, 8);
+    var h = '';
+    if (ui.sent) h += '<div class="banner ok">Request sent. Michela will answer here. Come back to check, or leave an email to get a message.</div>';
+    if (!mine.length) return h + '<div class="card"><p>No requests yet. Pick a time on the Free times tab.</p></div>';
+    return h + mine.map(reqCardClient).join('');
+  }
+
+  function clientView() {
+    var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone) && (r.status === 'pending' || r.status === 'proposed'); }).length;
+    var tabs = '<div class="tabs" role="group" aria-label="Client pages">' +
+      '<button type="button" data-act="ctab" data-v="free" aria-pressed="' + (ui.ctab === 'free') + '">Free times</button>' +
+      '<button type="button" data-act="ctab" data-v="request" aria-pressed="' + (ui.ctab === 'request') + '">Request</button>' +
+      '<button type="button" data-act="ctab" data-v="mine" aria-pressed="' + (ui.ctab === 'mine') + '">My requests' + (mine ? ' <span class="badge">' + mine + '</span>' : '') + '</button></div>';
+    return tabs + (ui.ctab === 'free' ? freeView() : ui.ctab === 'request' ? formView() : mineView());
+  }
+
+  /* ---------- Michela view ---------- */
+  function panelHtml(r, p) {
+    var id = r.id;
+    var data = ' data-scope="panel" data-id="' + id + '"';
+    var msgField = function (label, ph) {
+      return '<div class="field"><label for="p-msg-' + id + '">' + label + ' <span class="opt">(optional)</span></label><input type="text" id="p-msg-' + id + '"' + data + ' data-field="msg" value="' + esc(p.msg) + '" placeholder="' + ph + '"></div>';
+    };
+    if (p.kind === 'accept') {
+      var w = winPick(r.date, widOf(r));
+      return '<div class="panel"><div class="row2">' +
+        '<div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
+        '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
+        warnHtml(conflicts(r.date, p.start, p.dur, r.id, w)) +
+        msgField('Message to ' + esc(first(r.name)), 'See you then') +
+        '<div class="btns"><button type="button" class="btn primary" data-act="doAccept" data-id="' + id + '">Confirm session</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
+    }
+    if (p.kind === 'propose') {
+      var pw = winPick(p.date, widOf(r));
+      return '<div class="panel"><div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date) + '</select></div>' +
+        '<div class="row2"><div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
+        '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
+        '<p class="muted">' + esc(pw.loc) + '</p>' +
+        warnHtml(conflicts(p.date, p.start, p.dur, r.id, pw)) +
+        msgField('Message to ' + esc(first(r.name)), 'Would this work for you?') +
+        '<div class="btns"><button type="button" class="btn primary" data-act="doPropose" data-id="' + id + '">Send suggestion</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
+    }
+    return '<div class="panel">' + msgField('Message to ' + esc(first(r.name)), 'Sorry, I am away that weekend') +
+      '<div class="btns"><button type="button" class="btn danger" data-act="doDecline" data-id="' + id + '">Decline request</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
+  }
+
+  function reqCardM(r) {
+    var known = knownClient(r.phone, r.id);
+    var w = winPick(r.date, widOf(r));
+    var p = ui.panels[r.id];
+    return '<div class="card req"><div class="req-head"><div class="req-name">' + esc(r.name) + '<span class="tag">' + (known ? 'Regular client' : 'New client') + '</span>' + (r.example ? '<span class="ex">example</span>' : '') + '</div></div>' +
+      '<p class="muted">Phone <span class="sel">' + esc(r.phone) + '</span>' + (r.email ? ' &nbsp; Email <span class="sel">' + esc(r.email) + '</span>' : '') + '</p>' +
+      '<p class="line">' + esc(wantLine(r)) + '</p><p class="muted">' + esc(locOfReq(r)) + (w.open ? '' : '. Not in your listed times, so ask the studio first.') + '</p>' + (r.note ? '<p class="quote">' + esc(r.note) + '</p>' : '') +
+      (p ? panelHtml(r, p) :
+        '<div class="btns"><button type="button" class="btn primary" data-act="openPanel" data-v="accept" data-id="' + r.id + '">Accept</button>' +
+        '<button type="button" class="btn secondary" data-act="openPanel" data-v="propose" data-id="' + r.id + '">Suggest another time</button>' +
+        '<button type="button" class="btn danger" data-act="openPanel" data-v="decline" data-id="' + r.id + '">Decline</button></div>') + '</div>';
+  }
+
+  function requestsM() {
+    var pending = state.requests.filter(function (r) { return r.status === 'pending'; }).sort(function (a, b) { return a.created - b.created; });
+    var waiting = state.requests.filter(function (r) { return r.status === 'proposed'; });
+    var h = pending.length ? pending.map(reqCardM).join('') : '<div class="card"><p>Nothing waiting. New requests show up here, oldest first.</p></div>';
+    if (waiting.length) {
+      h += '<section class="card"><h2>Waiting for a client to answer</h2><ul class="items">' + waiting.map(function (r) {
+        return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span></li>';
+      }).join('') + '</ul></section>';
+    }
+    return h;
+  }
+
+  function scheduleM() {
+    var rows = allDates().filter(function (d) {
+      return state.blocks.some(function (b) { return b.date === d; }) ||
+        windowsFor(d).some(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
+    });
+    var groups = groupWeeks(rows, function (d) { return d; });
+    if (!groups.length) return '<div class="card"><p>Nothing scheduled yet.</p></div>';
+    return groups.map(function (g) {
+      return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(function (d) {
+        var pc = state.requests.filter(function (r) { return r.status === 'pending' && r.date === d; }).length;
+        var wins = windowsFor(d).filter(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
+        var body = wins.map(function (w) {
+          var rowsHtml = sessionsIn(d, w).map(function (r) {
+            return '<li><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span>' + esc(r.name) + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : '') + '</span></li>';
+          }).join('') + state.standing.filter(function (x) {
+            return x.wid === w.id && x.dow === parseISO(d).getDay() && state.skips[x.id + '|' + d];
+          }).map(function (x) {
+            return '<li><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span><span>' + esc(x.name) + ' <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></span></li>';
+          }).join('');
+          return '<div><p class="loc">' + esc(w.loc) + (w.cap > 1 ? ', ' + capText(w) : '') + '</p><ul class="items">' + (rowsHtml || '<li class="muted">No sessions</li>') + '</ul></div>';
+        }).join('');
+        var closed = state.blocks.filter(function (b) { return b.date === d; }).map(function (b) {
+          return '<li><span class="t">' + (b.whole ? 'Whole day' : b.from + ' to ' + b.to) + '</span><span>Closed' + (b.note ? ' (' + esc(b.note) + ')' : '') + ' <button type="button" class="link" data-act="removeBlock" data-id="' + b.id + '">Reopen</button></span></li>';
+        }).join('');
+        return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(d) + '</b>' + (pc ? pill('pending', pc + (pc > 1 ? ' requests' : ' request')) : '') + '<button type="button" class="link push" data-act="quickClose" data-v="' + d + '">Close time</button></div>' +
+          body + (closed ? '<ul class="items">' + closed + '</ul>' : '') + '</div>';
+      }).join('') + '</section>';
+    }).join('');
+  }
+
+  function studioCard() {
+    var rl = ui.rule;
+    var data = ' data-scope="rule"';
+    var list = state.rules.map(function (r) {
+      var chips = ruleDates(r).map(function (d) {
+        var on = !!state.open[r.id + '|' + d];
+        return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="toggleStudioDate" data-id="' + r.id + '" data-v="' + d + '" aria-pressed="' + on + '"><b>' + fmtDate(d) + '</b><small>' + (on ? 'Open to book' : 'Tap to open') + '</small></button>';
+      }).join('');
+      return '<div class="rule"><div class="dayrow"><b>' + esc(r.studio) + '</b><span class="loc">' + esc(ruleLine(r)) + '</span><button type="button" class="link push" data-act="removeRule" data-id="' + r.id + '">Remove</button></div><div class="chips">' + chips + '</div></div>';
+    }).join('');
+    var wk = WEEK.map(function (dow) {
+      var on = rl.days.indexOf(dow) > -1;
+      return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="toggleDay" data-v="' + dow + '" aria-pressed="' + on + '"><b>' + DAYS[dow] + '</b></button>';
+    }).join('');
+    var capOpts = [1, 2, 3, 4].map(function (n) { return '<option value="' + n + '"' + (rl.cap === n ? ' selected' : '') + '>' + n + (n === 1 ? ' person' : ' people') + '</option>'; }).join('');
+    return '<section class="card"><h2>Other studios</h2>' +
+      '<p class="muted">Add the days and hours once. Then tap the dates when the studio is available to book. Your regular clients can always request other days.</p>' +
+      (list ? '<div class="rules">' + list + '</div>' : '') +
+      '<div class="panel"><span class="lbl">Add studio hours</span>' +
+      '<div class="field"><label for="s-name">Studio name</label><input id="s-name"' + data + ' data-field="studio" value="' + esc(rl.studio) + '" placeholder="Studio X"></div>' +
+      '<div class="field"><span class="lbl">Days</span><div class="chips wk">' + wk + '</div></div>' +
+      '<div class="row3"><div class="field"><label for="s-from">From</label><input type="time" step="900" id="s-from"' + data + ' data-field="from" value="' + esc(rl.from) + '"></div>' +
+      '<div class="field"><label for="s-to">Until</label><input type="time" step="900" id="s-to"' + data + ' data-field="to" value="' + esc(rl.to) + '"></div>' +
+      '<div class="field"><label for="s-cap">At the same time</label><select id="s-cap"' + data + ' data-field="cap">' + capOpts + '</select></div></div>' +
+      (rl.err ? '<p class="err">' + esc(rl.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="addRule">Add studio hours</button></div></div></section>';
+  }
+
+  function daysFor(wid) {
+    if (wid === 'home') return WEEK.slice();
+    var r = state.rules.filter(function (x) { return x.id === wid; })[0];
+    return r ? WEEK.filter(function (d) { return r.days.indexOf(d) > -1; }) : [];
+  }
+  function standCard() {
+    var s = ui.stand, data = ' data-scope="stand"';
+    var list = state.standing.map(function (x) {
+      return '<li><span class="t">' + esc(x.name) + '</span><span>Every ' + FULL[x.dow] + ', ' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + ', ' + esc(windowObj(x.wid).loc) +
+        (x.example ? ' <span class="ex">example</span>' : '') + ' <button type="button" class="link" data-act="removeStanding" data-id="' + x.id + '">Remove</button></span></li>';
+    }).join('');
+    var whereOpts = ['home'].concat(state.rules.map(function (r) { return r.id; })).map(function (id) {
+      return '<option value="' + id + '"' + (s.wid === id ? ' selected' : '') + '>' + esc(windowObj(id).loc) + '</option>';
+    }).join('');
+    var dayOpts = daysFor(s.wid).map(function (d) { return '<option value="' + d + '"' + (s.dow === d ? ' selected' : '') + '>' + FULL[d] + '</option>'; }).join('');
+    return '<section class="card"><h2>Regular clients</h2><p class="muted">Save a fixed weekly slot. It holds that time every week, clients see it as booked, and you can skip a single date in your schedule.</p>' +
+      (list ? '<ul class="items">' + list + '</ul>' : '') +
+      '<div class="panel"><span class="lbl">Add a weekly slot</span>' +
+      '<div class="row2"><div class="field"><label for="w-name">Name</label><input id="w-name"' + data + ' data-field="name" value="' + esc(s.name) + '"></div>' +
+      '<div class="field"><label for="w-phone">Phone <span class="opt">(optional)</span></label><input id="w-phone" type="tel" inputmode="tel"' + data + ' data-field="phone" value="' + esc(s.phone) + '"></div></div>' +
+      '<div class="row2"><div class="field"><label for="w-wid">Where</label><select id="w-wid"' + data + ' data-field="wid" data-rerender>' + whereOpts + '</select></div>' +
+      '<div class="field"><label for="w-dow">Day</label><select id="w-dow"' + data + ' data-field="dow">' + dayOpts + '</select></div></div>' +
+      '<div class="row2"><div class="field"><label for="w-start">Start time</label><input type="time" step="900" id="w-start"' + data + ' data-field="start" value="' + esc(s.start) + '"></div>' +
+      '<div class="field"><label for="w-dur">Length</label><select id="w-dur"' + data + ' data-field="dur">' + durOptions(s.dur) + '</select></div></div>' +
+      (s.err ? '<p class="err">' + esc(s.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="addStanding">Save weekly slot</button></div></div></section>';
+  }
+
+  function blockForm() {
+    var b = ui.block;
+    var data = ' data-scope="block"';
+    return '<section class="card" id="blockform"><h2>Close a time</h2><p class="muted">Clients only see "Not available". Your note stays private. This closes the time at every studio.</p>' +
+      '<div class="field"><label for="b-date">Day</label><select id="b-date"' + data + ' data-field="date" data-rerender>' + dateOptions(b.date) + '</select></div>' +
+      '<label class="check" for="b-whole"><input type="checkbox" id="b-whole"' + data + ' data-field="whole" data-rerender' + (b.whole ? ' checked' : '') + '> Whole day</label>' +
+      (b.whole ? '' : '<div class="row2"><div class="field"><label for="b-from">From</label><input type="time" id="b-from"' + data + ' data-field="from" value="' + esc(b.from) + '"></div>' +
+        '<div class="field"><label for="b-to">Until</label><input type="time" id="b-to"' + data + ' data-field="to" value="' + esc(b.to) + '"></div></div>') +
+      '<div class="field"><label for="b-note">Private note <span class="opt">(optional)</span></label><input id="b-note"' + data + ' data-field="note" value="' + esc(b.note) + '" placeholder="Doctor, family, travel"></div>' +
+      (b.err ? '<p class="err">' + esc(b.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="addBlock">Close this time</button></div></section>';
+  }
+
+  function codeCard() {
+    var c = ui.code;
+    return '<section class="card" id="codecard"><h2>Michela\'s access</h2><p class="muted">Enter your code to see requests and edit the schedule.</p>' +
+      '<div class="field"><label for="c-code">Code</label><input id="c-code" type="password" inputmode="numeric" autocomplete="off" data-scope="code" data-field="val" value="' + esc(c.val) + '"></div>' +
+      (c.err ? '<p class="err">' + esc(c.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="unlock">Unlock</button><button type="button" class="btn ghost" data-act="closeCode">Cancel</button></div></section>';
+  }
+  function pinCard() {
+    var p = ui.pin;
+    return '<section class="card"><h2>Your code</h2><p class="muted">The code that opens this view. Use 4 to 8 digits.</p>' +
+      '<div class="field"><label for="pin-new">New code</label><input id="pin-new" type="password" inputmode="numeric" autocomplete="off" data-scope="pin" data-field="val" value="' + esc(p.val) + '"></div>' +
+      (p.err ? '<p class="err">' + esc(p.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="savePin">Save code</button></div></section>';
+  }
+
+  function michelaView() {
+    var n = pendingCount();
+    var tabs = '<div class="tabs" role="group" aria-label="Michela pages">' +
+      '<button type="button" data-act="mtab" data-v="requests" aria-pressed="' + (ui.mtab === 'requests') + '">Requests' + (n ? ' <span class="badge">' + n + '</span>' : '') + '</button>' +
+      '<button type="button" data-act="mtab" data-v="schedule" aria-pressed="' + (ui.mtab === 'schedule') + '">Schedule</button>' +
+      '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
+    if (ui.mtab === 'schedule') return tabs + scheduleM();
+    if (ui.mtab === 'setup') {
+      return tabs + studioCard() + standCard() + blockForm() + pinCard() +
+        '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
+    }
+    return tabs + requestsM();
+  }
+
+  /* ---------- render ---------- */
+  function render() {
+    if (!state.loaded) {
+      app.innerHTML = '<section class="card"><h2>Studio Sign Up</h2>' + (state.loadErr ? '<p class="err">' + esc(state.loadErr) + '</p><div class="btns"><button type="button" class="btn primary" data-act="retry">Try again</button></div>' : '<p class="muted">Loading...</p>') + '</section>';
+      return;
+    }
+    var act = document.activeElement;
+    var aid = act && act.id;
+    var body = (ui.view === 'michela' && state.unlocked) ? michelaView() : clientView();
+    app.innerHTML = head() + (ui.codeOpen && !state.unlocked ? codeCard() : '') + body;
+    if (aid) {
+      var el = document.getElementById(aid);
+      if (el && el.focus) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
+    }
+  }
+
+  function defaultStart() {
+    var d = ui.draft;
+    if (!d.date) return;
+    if (!d.start || d.auto) {
+      var w = winPick(d.date, d.wid), g = freeSegs(d.date, w)[0];
+      d.start = g ? fromMin(g.s) : w.from;
+      d.auto = true;
+    }
+  }
+  function find(id) { return state.requests.filter(function (r) { return r.id === id; })[0]; }
+
+  /* ---------- actions ---------- */
+  var A = {
+    view: function (id, v) {
+      if (v === 'michela' && !state.unlocked) { ui.codeOpen = true; render(); return; }
+      ui.view = v; ui.sent = null; render(); window.scrollTo(0, 0);
+    },
+    openCode: function () {
+      ui.codeOpen = true; ui.code = { val: '', err: '' }; render();
+      var el = document.getElementById('c-code');
+      if (el && el.focus) el.focus();
+    },
+    closeCode: function () { ui.codeOpen = false; ui.code = { val: '', err: '' }; render(); },
+    unlock: function () {
+      var c = ui.code.val;
+      if (!c) { ui.code = { val: '', err: 'Enter your code.' }; render(); return; }
+      api({ action: 'login', code: c }).then(function (j) {
+        state.code = c; state.unlocked = true; applyData(j.data);
+        try { sessionStorage.setItem(CODE_KEY, c); } catch (e) { /* ignore */ }
+        ui.view = 'michela'; ui.codeOpen = false; ui.code = { val: '', err: '' };
+        render(); window.scrollTo(0, 0); toast('Welcome, Michela');
+      }).catch(function (e) {
+        ui.code = { val: '', err: e.message }; render();
+      });
+    },
+    lock: function () {
+      state.unlocked = false; state.code = ''; state.requests = []; state.standing = []; state.blocks = []; state.skips = {};
+      try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ }
+      ui.view = 'client'; ui.ctab = 'free'; ui.codeOpen = false;
+      render(); window.scrollTo(0, 0); toast('Locked');
+      refresh(true);
+    },
+    retry: function () { state.loadErr = ''; render(); refresh(); },
+    savePin: function () {
+      var v = ui.pin.val.trim();
+      if (!/^\d{4,8}$/.test(v)) { ui.pin = { val: v, err: 'Use 4 to 8 digits.' }; render(); return; }
+      ui.pin = { val: '', err: '' }; save({ newCode: v }); render();
+    },
+    ctab: function (id, v) { ui.ctab = v; ui.sent = null; render(); window.scrollTo(0, 0); },
+    mtab: function (id, v) { ui.mtab = v; render(); window.scrollTo(0, 0); },
+    pickSlot: function (id, v) {
+      var p = v.split('|');
+      ui.draft.date = p[0]; ui.draft.wid = p[1]; ui.draft.start = fromMin(Number(p[2])); ui.draft.auto = false; ui.draft.err = '';
+      ui.ctab = 'request'; ui.sent = null; render(); window.scrollTo(0, 0);
+    },
+    pickDur: function (id, v) { ui.draft.dur = Number(v); render(); },
+    submit: function () {
+      var d = ui.draft;
+      var err = '';
+      if (!d.name.trim()) err = 'Please add your name.';
+      else if (digits(d.phone).length < 7) err = 'Please add a phone number Michela can reach you on.';
+      else if (!d.date) err = 'Pick a day.';
+      else if (!d.start) err = 'Pick a start time.';
+      if (err) { d.err = err; render(); return; }
+      var w = winPick(d.date, d.wid);
+      var r = { name: d.name.trim(), phone: d.phone.trim(), email: d.email.trim(), date: d.date, wid: w.id, reqStart: d.start, dur: d.dur, note: d.note.trim() };
+      if (ui.busy) return;
+      ui.busy = true;
+      api({ action: 'submit', request: r }).then(function (j) {
+        ui.busy = false;
+        state.me = { name: r.name, phone: r.phone, email: r.email, dur: r.dur };
+        saveMe();
+        ui.draft = newDraft();
+        ui.sent = j.id;
+        ui.ctab = 'mine';
+        return refresh(true).then(function () { render(); window.scrollTo(0, 0); toast('Request sent'); });
+      }).catch(function (e) {
+        ui.busy = false; d.err = e.message; render();
+      });
+    },
+    cancel: function (id) { A._own('cancel', id, 'Request cancelled'); },
+    acceptProposal: function (id) { A._own('accept_proposal', id, 'Session confirmed'); },
+    declineProposal: function (id) { A._own('decline_proposal', id, 'Declined'); },
+    _own: function (action, id, msg) {
+      api({ action: action, id: id, phone: state.me.phone }).then(function () { return refresh(true); })
+        .then(function () { render(); toast(msg); })
+        .catch(function (e) { toast(e.message); });
+    },
+    openPanel: function (id, v) {
+      var r = find(id);
+      ui.panels[id] = { kind: v, start: r.reqStart, dur: r.dur, date: r.date, msg: '' };
+      render();
+    },
+    closePanel: function (id) { delete ui.panels[id]; render(); },
+    doAccept: function (id) {
+      var r = find(id), p = ui.panels[id];
+      if (!p.start) { toast('Add a start time first'); return; }
+      r.status = 'accepted'; r.start = p.start; r.fdur = p.dur; r.fdate = r.date; r.reply = p.msg.trim();
+      delete ui.panels[id]; save(); render(); toast('Confirmed. ' + first(r.name) + ' sees it under My requests');
+    },
+    doPropose: function (id) {
+      var r = find(id), p = ui.panels[id];
+      if (!p.start) { toast('Add a start time first'); return; }
+      var w = winPick(p.date, widOf(r));
+      r.status = 'proposed'; r.proposal = { date: p.date, start: p.start, dur: p.dur, msg: p.msg.trim(), wid: w.id, loc: w.loc };
+      delete ui.panels[id]; save(); render(); toast('Suggestion sent to ' + first(r.name));
+    },
+    doDecline: function (id) {
+      var r = find(id), p = ui.panels[id];
+      r.status = 'declined'; r.reply = p.msg.trim();
+      delete ui.panels[id]; save(); render(); toast('Request declined');
+    },
+    quickClose: function (id, v) {
+      ui.block.date = v; ui.mtab = 'setup'; render();
+      var f = document.getElementById('blockform');
+      if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    addBlock: function () {
+      var b = ui.block;
+      if (!b.whole && toMin(b.to) <= toMin(b.from)) { b.err = 'The end time must be after the start time.'; render(); return; }
+      var s = b.whole ? 0 : toMin(b.from), e = b.whole ? 1440 : toMin(b.to);
+      var clash = windowsFor(b.date).some(function (w) {
+        return sessionsIn(b.date, w).some(function (r) { return toMin(r.start) < e && toMin(r.start) + r.fdur > s; });
+      });
+      state.blocks.push({ id: 'b' + Date.now(), date: b.date, whole: b.whole, from: b.from, to: b.to, note: b.note.trim() });
+      save();
+      ui.block = newBlock();
+      render();
+      toast(clash ? 'Closed. You already have a confirmed session in that time.' : 'Time closed');
+    },
+    removeBlock: function (id) {
+      state.blocks = state.blocks.filter(function (b) { return b.id !== id; });
+      save(); render(); toast('Time reopened');
+    },
+    toggleDay: function (id, v) {
+      var n = Number(v), i = ui.rule.days.indexOf(n);
+      if (i > -1) ui.rule.days.splice(i, 1); else ui.rule.days.push(n);
+      render();
+    },
+    addRule: function () {
+      var rl = ui.rule, err = '';
+      if (!rl.studio.trim()) err = 'Add the studio name.';
+      else if (!rl.days.length) err = 'Pick at least one day.';
+      else if (toMin(rl.to) <= toMin(rl.from)) err = 'The end time must be after the start time.';
+      if (err) { rl.err = err; render(); return; }
+      state.rules.push({ id: 's' + Date.now(), studio: rl.studio.trim(), days: rl.days.slice(), from: rl.from, to: rl.to, cap: rl.cap });
+      save(); ui.rule = newRule(); render(); toast('Studio added. Tap the dates that are open to book');
+    },
+    removeRule: function (id) {
+      var used = state.requests.some(function (r) {
+        return widOf(r) === id && (r.status === 'accepted' || r.status === 'pending' || r.status === 'proposed');
+      });
+      if (used || state.standing.some(function (s) { return s.wid === id; })) { toast('This studio still has open sessions or weekly clients'); return; }
+      if (ui.stand.wid === id) ui.stand = newStand();
+      state.rules = state.rules.filter(function (r) { return r.id !== id; });
+      Object.keys(state.open).forEach(function (k) { if (k.indexOf(id + '|') === 0) delete state.open[k]; });
+      save(); render(); toast('Studio removed');
+    },
+    toggleStudioDate: function (id, v) {
+      var key = id + '|' + v;
+      if (state.open[key]) {
+        if (sessionsIn(v, winPick(v, id)).length > 0) { toast('There are booked sessions on that day'); return; }
+        delete state.open[key];
+        toast('Date closed for booking');
+      } else {
+        state.open[key] = true;
+        toast('Date open to book');
+      }
+      save(); render();
+    },
+    addStanding: function () {
+      var s = ui.stand, w = windowObj(s.wid), err = '';
+      var a = toMin(s.start), z = a + s.dur;
+      if (!s.name.trim()) err = 'Add the client name.';
+      else if (!daysFor(s.wid).length) err = 'That studio has no days set.';
+      else if (a < toMin(w.from) || z > toMin(w.to)) err = 'Outside the hours at ' + w.loc + ' (' + w.from + ' to ' + w.to + ').';
+      else {
+        var buf = w.cap === 1 ? 15 : 0;
+        var same = state.standing.filter(function (x) {
+          return x.wid === s.wid && x.dow === s.dow && a < toMin(x.start) + x.dur + buf && z + buf > toMin(x.start);
+        });
+        if (same.length >= w.cap) err = 'That time is already taken every week.';
+      }
+      if (err) { s.err = err; render(); return; }
+      state.standing.push({ id: 'w' + Date.now(), name: s.name.trim(), phone: s.phone.trim(), wid: s.wid, dow: s.dow, start: s.start, dur: s.dur });
+      save(); ui.stand = newStand(); render(); toast('Weekly slot saved');
+    },
+    removeStanding: function (id) {
+      state.standing = state.standing.filter(function (s) { return s.id !== id; });
+      Object.keys(state.skips).forEach(function (k) { if (k.indexOf(id + '|') === 0) delete state.skips[k]; });
+      save(); render(); toast('Weekly slot removed');
+    },
+    skipStanding: function (id, v) { state.skips[id + '|' + v] = true; save(); render(); toast('Skipped for that date'); },
+    unskipStanding: function (id, v) { delete state.skips[id + '|' + v]; save(); render(); toast('Back on for that date'); }
+  };
+
+  app.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    var fn = A[b.dataset.act];
+    if (fn) fn(b.dataset.id, b.dataset.v);
+  });
+
+  function onField(e) {
+    var t = e.target;
+    var sc = t.dataset && t.dataset.scope;
+    if (!sc) return;
+    var obj = sc === 'draft' ? ui.draft : sc === 'block' ? ui.block : sc === 'rule' ? ui.rule : sc === 'stand' ? ui.stand : sc === 'code' ? ui.code : sc === 'pin' ? ui.pin : ui.panels[t.dataset.id];
+    if (!obj) return;
+    var f = t.dataset.field;
+    var val = t.type === 'checkbox' ? t.checked : t.value;
+    if (sc === 'draft' && f === 'slot') {
+      var pr = val.split('|');
+      var changed = obj.date !== (pr[0] || '') || obj.wid !== (pr[1] || '');
+      obj.date = pr[0] || ''; obj.wid = pr[1] || '';
+      if (changed) { obj.start = ''; obj.auto = true; defaultStart(); }
+      if (e.type === 'change') render();
+      return;
+    }
+    if (f === 'dur' || f === 'cap' || f === 'dow') val = Number(val);
+    obj[f] = val;
+    if (sc === 'stand' && f === 'wid') obj.dow = daysFor(val)[0];
+    if (sc === 'draft' && f === 'start') obj.auto = false;
+    if (e.type === 'change' && sc === 'draft' && f === 'phone' && !state.unlocked) {
+      var ph = String(val);
+      api({ action: 'public', phone: ph }).then(function (j) { applyData(j); render(); }).catch(function () { /* ignore */ });
+    }
+    if (e.type === 'change' && t.hasAttribute('data-rerender')) render();
+  }
+  app.addEventListener('input', onField);
+  app.addEventListener('change', onField);
+  app.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.id === 'c-code') { e.preventDefault(); A.unlock(); }
+  });
+
+  resetUi('client');
+  render();
+  var savedCode = '';
+  try { savedCode = sessionStorage.getItem(CODE_KEY) || ''; } catch (e) { /* ignore */ }
+  if (savedCode) {
+    api({ action: 'login', code: savedCode }).then(function (j) {
+      state.code = savedCode; state.unlocked = true; applyData(j.data); render();
+    }).catch(function () { try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ } return refresh(); });
+  } else refresh();
+  setInterval(function () { if (state.loaded && !document.hidden) refresh(true); }, 30000);
+  document.addEventListener('visibilitychange', function () { if (state.loaded && !document.hidden) refresh(true); });
+})();
+</script>
+
+</body>
+</html>
