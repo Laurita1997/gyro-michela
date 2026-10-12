@@ -79,8 +79,8 @@ label, .lbl { font-weight: 600; font-size: 14px; }
 input, select, textarea { width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--ground); color: var(--ink); font: 400 16px var(--font-body); min-width: 0; }
 textarea { resize: vertical; min-height: 76px; }
 input[type="checkbox"] { width: 20px; height: 20px; padding: 0; accent-color: var(--accent); }
-input[type="time"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; max-width: 100%; min-height: 46px; text-align: left; }
-input[type="time"]::-webkit-date-and-time-value { text-align: left; }
+input[type="time"], input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; max-width: 100%; min-height: 46px; text-align: left; }
+input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-date-and-time-value { text-align: left; }
 .check { display: flex; align-items: center; gap: 10px; font-weight: 500; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
@@ -177,14 +177,20 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     return out;
   }
   function horizon() { var w = weekendDays(28); return w[w.length - 1]; }
-  function ruleDates(rule) {
-    var out = [], last = horizon(), d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() + 1);
-    while (iso(d) <= last) {
+  function ruleDates(rule, fromISO, toISO) {
+    var out = [], d = parseISO(fromISO);
+    while (iso(d) <= toISO) {
       if (rule.days.indexOf(d.getDay()) > -1) out.push(iso(d));
       d.setDate(d.getDate() + 1);
     }
+    return out;
+  }
+  function tomorrow() { var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1); return iso(d); }
+  function monthKey(dateStr) { return dateStr.slice(0, 7); }
+  function monthLabel(key) { var p = key.split('-'); return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(p[1]) - 1] + ' ' + p[0]; }
+  function monthList() {
+    var out = [], d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(1);
+    for (var i = 0; i < 13; i++) { out.push(iso(d).slice(0, 7)); d.setMonth(d.getMonth() + 1); }
     return out;
   }
   function weekLabel(dateStr) {
@@ -282,11 +288,11 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
   function newDraft() {
     return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
   }
-  function newBlock() { return { date: allDates()[0], whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
+  function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, cap: 2, err: '' }; }
   function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
   function resetUi(view) {
-    ui = { view: view, ctab: 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
+    ui = { month: monthKey(tomorrow()), view: view, ctab: 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
     ui.draft = newDraft(); ui.block = newBlock(); ui.rule = newRule(); ui.stand = newStand();
   }
 
@@ -306,9 +312,13 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
   var locOfReq = function (r) { return r.loc || HOME.loc; };
 
   function allDates() {
-    var set = {};
+    var set = {}, t = tomorrow();
     weekendDays(28).forEach(function (d) { set[d] = 1; });
-    state.rules.forEach(function (r) { ruleDates(r).forEach(function (d) { set[d] = 1; }); });
+    Object.keys(state.open).forEach(function (k) { var d = k.split('|')[1]; if (d >= t) set[d] = 1; });
+    state.requests.forEach(function (r) {
+      [r.date, r.fdate, r.proposal && r.proposal.date].forEach(function (d) { if (d && d >= t) set[d] = 1; });
+    });
+    state.blocks.forEach(function (b) { if (b.date >= t) set[b.date] = 1; });
     return Object.keys(set).sort();
   }
   function hoursFor(r, dow) {
@@ -317,7 +327,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
   }
   function windowsFor(date) {
     var dow = parseISO(date).getDay(), out = [];
-    out.push(HOME);
+    if (date <= horizon()) out.push(HOME);
     state.rules.forEach(function (r) {
       if (r.days.indexOf(dow) > -1) { var h = hoursFor(r, dow); out.push({ id: r.id, loc: r.studio, from: h.from, to: h.to, cap: r.cap, open: !!state.open[r.id + '|' + date] }); }
     });
@@ -659,7 +669,9 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     var data = ' data-scope="rule"';
     var editing = !!rl.id;
     var list = state.rules.map(function (r) {
-      var chips = ruleDates(r).map(function (d) {
+      var mFrom = ui.month === monthKey(tomorrow()) ? tomorrow() : ui.month + '-01';
+      var mEnd = new Date(Number(ui.month.slice(0, 4)), Number(ui.month.slice(5)), 0);
+      var chips = ruleDates(r, mFrom, iso(mEnd)).map(function (d) {
         var on = !!state.open[r.id + '|' + d];
         return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-act="toggleStudioDate" data-id="' + r.id + '" data-v="' + d + '" aria-pressed="' + on + '"><b>' + fmtDate(d) + '</b><small>' + (on ? 'Open to book' : 'Tap to open') + '</small></button>';
       }).join('');
@@ -678,7 +690,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     var capOpts = [1, 2, 3, 4].map(function (n) { return '<option value="' + n + '"' + (rl.cap === n ? ' selected' : '') + '>' + n + (n === 1 ? ' person' : ' people') + '</option>'; }).join('');
     return '<section class="card"><h2>Other studios</h2>' +
       '<p class="muted">Set the days and hours once. Hours can be different on each day. Then tap the dates when the studio is available to book. Your regular clients can always request other days.</p>' +
-      (list ? '<div class="rules">' + list + '</div>' : '') +
+      (list ? '<div class="field"><label for="s-month">Month</label><select id="s-month" data-scope="ui" data-field="month" data-rerender>' + monthList().map(function (m) { return '<option value="' + m + '"' + (m === ui.month ? ' selected' : '') + '>' + monthLabel(m) + '</option>'; }).join('') + '</select></div><div class="rules">' + list + '</div>' : '') +
       '<div class="panel" id="ruleform"><span class="lbl">' + (editing ? 'Edit studio hours' : 'Add studio hours') + '</span>' +
       '<div class="field"><label for="s-name">Studio name</label><input id="s-name"' + data + ' data-field="studio" value="' + esc(rl.studio) + '" placeholder="Studio X"></div>' +
       '<div class="field"><span class="lbl">Days</span><div class="chips wk">' + wk + '</div></div>' +
@@ -720,7 +732,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     var b = ui.block;
     var data = ' data-scope="block"';
     return '<section class="card" id="blockform"><h2>Close a time</h2><p class="muted">Clients only see "Not available". Your note stays private. This closes the time at every studio.</p>' +
-      '<div class="field"><label for="b-date">Day</label><select id="b-date"' + data + ' data-field="date" data-rerender>' + dateOptions(b.date) + '</select></div>' +
+      '<div class="field"><label for="b-date">Day</label><input type="date" id="b-date"' + data + ' data-field="date" min="' + tomorrow() + '" value="' + esc(b.date) + '"></div>' +
       '<label class="check" for="b-whole"><input type="checkbox" id="b-whole"' + data + ' data-field="whole" data-rerender' + (b.whole ? ' checked' : '') + '> Whole day</label>' +
       (b.whole ? '' : '<div class="row2"><div class="field"><label for="b-from">From</label><input type="time" id="b-from"' + data + ' data-field="from" value="' + esc(b.from) + '"></div>' +
         '<div class="field"><label for="b-to">Until</label><input type="time" id="b-to"' + data + ' data-field="to" value="' + esc(b.to) + '"></div></div>') +
@@ -1021,7 +1033,7 @@ input[type="time"]::-webkit-date-and-time-value { text-align: left; }
     var t = e.target;
     var sc = t.dataset && t.dataset.scope;
     if (!sc) return;
-    var obj = sc === 'draft' ? ui.draft : sc === 'block' ? ui.block : sc === 'rule' ? ui.rule : sc === 'stand' ? ui.stand : sc === 'code' ? ui.code : sc === 'pin' ? ui.pin : ui.panels[t.dataset.id];
+    var obj = sc === 'draft' ? ui.draft : sc === 'block' ? ui.block : sc === 'rule' ? ui.rule : sc === 'stand' ? ui.stand : sc === 'code' ? ui.code : sc === 'pin' ? ui.pin : sc === 'ui' ? ui : ui.panels[t.dataset.id];
     if (!obj) return;
     var f = t.dataset.field;
     var val = t.type === 'checkbox' ? t.checked : t.value;
