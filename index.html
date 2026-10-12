@@ -550,8 +550,8 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       return '<option value="' + x + '"' + (x === d.date ? ' selected' : '') + '>' + esc(fmtDate(x)) + '</option>';
     }).join('');
     var allPlaces = [{ id: 'home', loc: HOME.loc }].concat(state.rules.map(function (r) { return { id: r.id, loc: r.studio }; }));
-    var whereHtml = (d.date && allPlaces.length > 1) ? '<div class="field"><label for="f-wid">Where</label><select id="f-wid" data-scope="draft" data-field="wid" data-rerender>' + allPlaces.map(function (x) {
-      var avail = dayOpts.some(function (o) { return o.win.id === x.id; });
+    var whereHtml = allPlaces.length > 1 ? '<div class="field"><label for="f-wid">Where</label><select id="f-wid" data-scope="draft" data-field="wid" data-rerender>' + allPlaces.map(function (x) {
+      var avail = !d.date || dayOpts.some(function (o) { return o.win.id === x.id; });
       return '<option value="' + esc(x.id) + '"' + (x.id === d.wid ? ' selected' : '') + (avail ? '' : ' disabled') + '>' + esc(x.loc) + (avail ? '' : ' (not open this day)') + '</option>';
     }).join('') + '</select></div>' : '';
     var hint = '';
