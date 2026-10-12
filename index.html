@@ -286,7 +286,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
   var ui;
   function newDraft() {
-    return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
+    return { place: 'home', name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, cap: 2, err: '' }; }
@@ -529,13 +529,18 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 
   function formView() {
     var d = ui.draft;
-    var opts = slotOptions(d.phone);
+    var allOpts = slotOptions(d.phone);
+    var places = [];
+    allOpts.forEach(function (o) { if (!places.some(function (x) { return x.id === o.win.id; })) places.push({ id: o.win.id, loc: o.win.loc }); });
+    if (!places.some(function (x) { return x.id === d.place; })) d.place = places.length ? places[0].id : 'home';
+    if (d.date && d.wid && d.wid !== d.place) d.place = d.wid;
+    var opts = allOpts.filter(function (o) { return o.win.id === d.place; });
     var cur = d.date + '|' + d.wid;
     if (d.date && !opts.some(function (o) { return o.date + '|' + o.win.id === cur; })) { d.date = ''; d.wid = ''; d.start = ''; d.auto = true; cur = '|'; }
     var win = d.date ? winPick(d.date, d.wid) : null;
     var selOpts = '<option value="|">Choose a day</option>' + opts.map(function (o) {
       var v = o.date + '|' + o.win.id;
-      return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(fmtDate(o.date) + ', ' + o.win.loc) + '</option>';
+      return '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(fmtDate(o.date)) + '</option>';
     }).join('');
     var hint = '';
     if (win) {
@@ -552,6 +557,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       '<div class="row2"><div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
       '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
       '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message when Michela replies)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div>' +
+      (places.length > 1 ? '<div class="field"><label for="f-place">Where</label><select id="f-place" data-scope="draft" data-field="place" data-rerender>' + places.map(function (x) { return '<option value="' + esc(x.id) + '"' + (x.id === d.place ? ' selected' : '') + '>' + esc(x.loc) + '</option>'; }).join('') + '</select></div>' : '') +
       '<div class="field"><label for="f-slot">Day</label><select id="f-slot" data-scope="draft" data-field="slot" data-rerender>' + selOpts + '</select>' +
       (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + hint + '</div>' +
       '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
@@ -838,7 +844,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     mtab: function (id, v) { ui.mtab = v; render(); window.scrollTo(0, 0); },
     pickSlot: function (id, v) {
       var p = v.split('|');
-      ui.draft.date = p[0]; ui.draft.wid = p[1]; ui.draft.start = fromMin(Number(p[2])); ui.draft.auto = false; ui.draft.err = '';
+      ui.draft.date = p[0]; ui.draft.wid = p[1]; ui.draft.place = p[1]; ui.draft.start = fromMin(Number(p[2])); ui.draft.auto = false; ui.draft.err = '';
       ui.ctab = 'request'; ui.sent = null; render(); window.scrollTo(0, 0);
     },
     pickDur: function (id, v) { ui.draft.dur = Number(v); render(); },
@@ -1037,10 +1043,16 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     if (!obj) return;
     var f = t.dataset.field;
     var val = t.type === 'checkbox' ? t.checked : t.value;
+    if (sc === 'draft' && f === 'place') {
+      obj.place = val; obj.date = ''; obj.wid = ''; obj.start = ''; obj.auto = true;
+      if (e.type === 'change') render();
+      return;
+    }
     if (sc === 'draft' && f === 'slot') {
       var pr = val.split('|');
       var changed = obj.date !== (pr[0] || '') || obj.wid !== (pr[1] || '');
       obj.date = pr[0] || ''; obj.wid = pr[1] || '';
+      if (obj.wid) obj.place = obj.wid;
       if (changed) { obj.start = ''; obj.auto = true; defaultStart(); }
       if (e.type === 'change') render();
       return;
