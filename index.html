@@ -204,8 +204,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   var API = 'https://khzapfmsvtwyxenyshvx.supabase.co/functions/v1/api';
   var DUR = [];
   for (var dm = 60; dm <= 180; dm += 15) DUR.push(dm);
-  var VARIANT = 'classic';
-  try { var vmatch = /[?&]v=(d|e)\b/.exec(location.search); if (vmatch) VARIANT = vmatch[1]; } catch (e) { /* ignore */ }
+  var VARIANT = 'e';
+  try { var vmatch = /[?&]v=(d|e|classic)\b/.exec(location.search); if (vmatch) VARIANT = vmatch[1]; } catch (e) { /* ignore */ }
   try { if (document.body) document.body.className = 'v-' + VARIANT; } catch (e) { /* ignore */ }
   var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
