@@ -1036,14 +1036,20 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function blockForm() {
     var b = ui.block;
     var data = ' data-scope="block"';
+    var tdy = tomorrow();
+    var fmtB = function (x) { return '<li><span class="t">' + esc(fmtDate(x.date)) + '</span><span>' + (x.whole ? 'Whole day' : x.from + ' to ' + x.to) + (x.note ? ' (' + esc(x.note) + ')' : '') + ' <button type="button" class="link" data-act="removeBlock" data-id="' + x.id + '">Reopen</button></span></li>'; };
+    var mine = state.blocks.filter(function (x) { return x.date >= tdy; }).sort(function (p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : (p.from || '') < (q.from || '') ? -1 : 1; });
+    var day = mine.filter(function (x) { return x.date === b.date; });
+    var sameDay = day.length ? '<p class="warnline">Already closed on this day: ' + day.map(function (x) { return x.whole ? 'whole day' : x.from + ' to ' + x.to; }).join(', ') + '.</p>' : '';
+    var listed = '<section class="card"><h2>Already closed</h2>' + (mine.length ? '<ul class="items">' + mine.map(fmtB).join('') + '</ul>' : '<p class="muted">Nothing closed yet.</p>') + '</section>';
     return '<section class="card" id="blockform"><h2>Close a time</h2><p class="muted">Clients only see "Not available". Your note stays private. This closes the time at every studio.</p>' +
-      '<div class="field"><label for="b-date">Day</label><input type="date" id="b-date"' + data + ' data-field="date" min="' + tomorrow() + '" value="' + esc(b.date) + '"></div>' +
+      '<div class="field"><label for="b-date">Day</label><input type="date" id="b-date"' + data + ' data-field="date" data-rerender min="' + tomorrow() + '" value="' + esc(b.date) + '"></div>' + sameDay +
       '<label class="check" for="b-whole"><input type="checkbox" id="b-whole"' + data + ' data-field="whole" data-rerender' + (b.whole ? ' checked' : '') + '> Whole day</label>' +
       (b.whole ? '' : '<div class="row2"><div class="field"><label for="b-from">From</label><input type="time" id="b-from"' + data + ' data-field="from" value="' + esc(b.from) + '"></div>' +
         '<div class="field"><label for="b-to">Until</label><input type="time" id="b-to"' + data + ' data-field="to" value="' + esc(b.to) + '"></div></div>') +
       '<div class="field"><label for="b-note">Private note <span class="opt">(optional)</span></label><input id="b-note"' + data + ' data-field="note" value="' + esc(b.note) + '" placeholder="Doctor, family, travel"></div>' +
       (b.err ? '<p class="err">' + esc(b.err) + '</p>' : '') +
-      '<div class="btns"><button type="button" class="btn primary" data-act="addBlock">Close this time</button></div></section>';
+      '<div class="btns"><button type="button" class="btn primary" data-act="addBlock">Close this time</button></div></section>' + listed;
   }
 
   function codeCard() {
@@ -1250,6 +1256,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       var b = ui.block;
       if (!b.whole && toMin(b.to) <= toMin(b.from)) { b.err = 'The end time must be after the start time.'; render(); return; }
       var s = b.whole ? 0 : toMin(b.from), e = b.whole ? 1440 : toMin(b.to);
+      var dup = state.blocks.some(function (x) { return x.date === b.date && (x.whole ? 0 : toMin(x.from)) <= s && (x.whole ? 1440 : toMin(x.to)) >= e; });
+      if (dup) { b.err = 'That time is already closed.'; render(); return; }
       var clash = windowsFor(b.date).some(function (w) {
         return sessionsIn(b.date, w).some(function (r) { return toMin(r.start) < e && toMin(r.start) + r.fdur > s; });
       });
