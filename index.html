@@ -498,7 +498,14 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var d = sessionDate(r).replace(/-/g, '');
     var s = toMin(r.start), e = s + r.fdur;
     var f = function (n) { return pad(Math.floor(n / 60)) + pad(n % 60) + '00'; };
-    return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent('Gyro with Michela') + '&location=' + encodeURIComponent(locOfReq(r)) + '&dates=' + d + 'T' + f(s) + '/' + d + 'T' + f(e);
+    var stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    var ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Gyro with Michela//EN', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+      'UID:' + r.id + '@gyro-michela', 'DTSTAMP:' + stamp,
+      'DTSTART:' + d + 'T' + f(s), 'DTEND:' + d + 'T' + f(e),
+      'SUMMARY:Gyro with Michela', 'LOCATION:' + locOfReq(r).replace(/[,;]/g, ' '),
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Gyro with Michela', 'TRIGGER:-PT1H', 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
   }
   var pill = function (kind, text) { return '<span class="pill ' + kind + '">' + esc(text) + '</span>'; };
   var durChips = function (sel) {
@@ -558,7 +565,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     } else if (r.status === 'accepted') {
       status = pill('ok', 'Confirmed');
       body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
-      actions = '<a class="btn secondary" href="' + gcal(r) + '" target="_blank" rel="noopener">Add to Google Calendar</a><button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
+      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a><button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
     } else if (r.status === 'proposed') {
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
