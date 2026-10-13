@@ -6,7 +6,7 @@
 <title>Studio Sign Up</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=Figtree:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: one calm column. Clients get three tabs: Free times, Request, My requests. Michela gets Requests, Schedule, Setup. Free times are plain tappable slots grouped by week. */
 :root {
@@ -134,6 +134,60 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .foot { display: flex; justify-content: flex-start; }
 #toast { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 500; opacity: 0; pointer-events: none; }
 #toast.on { opacity: 1; }
+/* ---- previews D and E: shared parts ---- */
+.stepper { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.stp { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: var(--ground); color: var(--ink); font: 700 24px var(--font-body); cursor: pointer; }
+.stp:last-child { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.stp:disabled { opacity: 0.35; cursor: default; }
+.stv { text-align: center; }
+.stv b { display: block; font: 800 22px var(--font-display); }
+.stv small { color: var(--ink-soft); font-size: 13px; }
+.hgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.mgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tchip { padding: 12px 0; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 700 15px var(--font-body); cursor: pointer; font-variant-numeric: tabular-nums; }
+.tchip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.tchip.gone { color: var(--ink-soft); opacity: 0.5; text-decoration: line-through; }
+.tchip:disabled { cursor: default; }
+.lbl2 { font-size: 12px; font-weight: 700; color: var(--ink-soft); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 4px; }
+.daystrip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; }
+.dchip { flex: none; width: 54px; padding: 9px 0; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; font-family: var(--font-body); }
+.dchip small { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--ink-soft); }
+.dchip b { font: 800 19px var(--font-display); }
+.dchip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.dchip.on small { color: var(--accent-ink); opacity: 0.85; }
+.dchip.full { opacity: 0.45; }
+.fchips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.fchip { border: 1.5px solid var(--accent); background: var(--hl); color: var(--hl-ink); border-radius: 14px; padding: 10px 14px; font: 700 14px var(--font-body); cursor: pointer; display: flex; flex-direction: column; align-items: center; font-variant-numeric: tabular-nums; }
+.fchip small { font-weight: 600; font-size: 11px; opacity: 0.8; }
+.tl { display: flex; height: 26px; border-radius: 13px; overflow: hidden; background: var(--line); }
+.tl-seg.free { background: var(--hl); }
+.tl-seg.busy { background: var(--ink-soft); opacity: 0.55; }
+.tl-lab { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+.bnav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--ground); border-top: 1px solid var(--line); display: flex; justify-content: center; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 5; }
+.bnav-in { width: 100%; max-width: 640px; display: flex; gap: 4px; padding: 8px 12px; }
+.bnav button { flex: 1; min-height: 48px; border: 0; border-radius: 14px; background: transparent; color: var(--ink-soft); font: 600 14px var(--font-body); cursor: pointer; }
+.bnav button[aria-pressed="true"] { background: var(--hl); color: var(--hl-ink); font-weight: 800; }
+.btn.big { width: 100%; padding: 16px; font-size: 16px; font-weight: 800; border-radius: 14px; }
+.xday { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.cal-wd { font-size: 12px; font-weight: 700; color: var(--ink-soft); padding-bottom: 4px; }
+.cell { height: 44px; border-radius: 22px; border: 0; font: 700 16px var(--font-body); background: transparent; color: var(--ink); }
+.cell.off { color: var(--ink-soft); opacity: 0.35; }
+.cell.full { background: var(--line); color: var(--ink-soft); }
+.cell.free { background: var(--hl); color: var(--hl-ink); cursor: pointer; }
+.cell.sel { background: var(--accent); color: var(--accent-ink); }
+.round { width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 700 22px var(--font-body); cursor: pointer; line-height: 1; }
+.round:disabled { opacity: 0.35; cursor: default; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 6px; background: var(--hl); vertical-align: -1px; }
+.dot.grey { background: var(--line); }
+body.v-d #toast, body.v-e #toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+/* ---- preview D: light, indigo ---- */
+body.v-d { --ground: #FFFFFF; --surface: #F6F7FB; --ink: #15171F; --ink-soft: #6B7080; --line: #E4E6EE; --accent: #4F46E5; --accent-ink: #FFFFFF; --accent-soft: #EEF0FF; --hl: #E3E5FF; --hl-ink: #15171F; --font-display: "Plus Jakarta Sans", system-ui, sans-serif; --font-body: "Plus Jakarta Sans", system-ui, sans-serif; color-scheme: light; }
+/* ---- preview E: calendar, black and yellow ---- */
+body.v-e { --ground: #FFFFFF; --surface: #F4F4F0; --ink: #111111; --ink-soft: #6A6A64; --line: #E2E2DC; --accent: #111111; --accent-ink: #FFFFFF; --accent-soft: #FFE98A; --hl: #FFD60A; --hl-ink: #111111; --font-display: "DM Sans", system-ui, sans-serif; --font-body: "DM Sans", system-ui, sans-serif; color-scheme: light; }
+body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55; --ok-soft: #DDF5F0; }
+
 @media (prefers-reduced-motion: no-preference) { #toast { transition: opacity 0.2s ease; } }
 </style>
 
@@ -148,7 +202,11 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   var KEY = 'studio-signup-me-v1';
   var CODE_KEY = 'studio-signup-code-v1';
   var API = 'https://khzapfmsvtwyxenyshvx.supabase.co/functions/v1/api';
-  var DUR = [60, 90, 120, 150, 180];
+  var DUR = [];
+  for (var dm = 60; dm <= 180; dm += 15) DUR.push(dm);
+  var VARIANT = 'classic';
+  try { var vmatch = /[?&]v=(d|e)\b/.exec(location.search); if (vmatch) VARIANT = vmatch[1]; } catch (e) { /* ignore */ }
+  try { if (document.body) document.body.className = 'v-' + VARIANT; } catch (e) { /* ignore */ }
   var DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   var FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var WEEK = [1, 2, 3, 4, 5, 6, 0];
@@ -298,7 +356,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, err: '' }; }
   function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
   function resetUi(view) {
-    ui = { month: monthKey(tomorrow()), view: view, ctab: 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
+    ui = { month: monthKey(tomorrow()), view: view, ctab: VARIANT === 'd' ? 'home' : VARIANT === 'e' ? 'cal' : 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
     ui.draft = newDraft(); ui.block = newBlock(); ui.rule = newRule(); ui.stand = newStand();
   }
 
@@ -474,6 +532,12 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 
   /* ---------- header ---------- */
   function head() {
+    var h = headClassic();
+    if (VARIANT === 'd') return h.replace(/<p class="sub">.*?<\/p>/, '<p class="sub">Book Michela\'s studio straight away. Other studios are a request.</p>');
+    if (VARIANT === 'e') return h.replace(/<p class="sub">.*?<\/p>/, '<p class="sub">Find a free time in the calendar.</p>');
+    return h;
+  }
+  function headClassic() {
     var title = '<div class="titlebar"><div><h1>Gyro with Michela</h1><p class="sub">Book Michela\'s studio straight away. For other studios you send a request and she replies.</p></div>' +
       (state.unlocked ? '' : '<button type="button" class="btn ghost small" data-act="openCode" aria-label="Michela login">Michela</button>') + '</div>';
     var nav = state.unlocked ? '<div class="switch" role="group" aria-label="Switch view">' +
@@ -580,7 +644,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + '</div>' +
       whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') + (win ? '<p class="muted">' + (direct ? 'You are booked straight away. No reply needed.' : 'This one is a request. Michela confirms it.') + '</p>' : '') +
       '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
-      '<div class="field"><span class="lbl">How long do you usually take?</span><div class="chips dur">' + durChips(d.dur) + '</div>' + ends + '</div>' +
+      '<div class="field"><span class="lbl">How long do you usually take?</span>' + lenStepper(d) + ends + '</div>' +
       '<div class="field"><label for="f-note">Note for Michela <span class="opt">(optional, for example if you could come earlier or later)</span></label><textarea id="f-note" data-scope="draft" data-field="note" placeholder="I can also come up to an hour earlier or later">' + esc(d.note) + '</textarea></div>' +
       (d.err ? '<p class="err">' + esc(d.err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary" data-act="submit">' + (direct ? 'Book now' : 'Send request') + '</button></div></section>';
@@ -596,6 +660,199 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
   }
 
   function clientView() {
+    if (VARIANT === 'd') return clientViewD();
+    if (VARIANT === 'e') return clientViewE();
+    return clientViewClassic();
+  }
+  /* ---------- shared pieces for the D and E previews ---------- */
+  function clampDur(m) { return Math.max(60, Math.min(180, m)); }
+  function lenStepper(d) {
+    return '<div class="stepper"><button type="button" class="stp" data-act="durStep" data-v="-15" aria-label="Shorter"' + (d.dur <= 60 ? ' disabled' : '') + '>-</button>' +
+      '<div class="stv"><b>' + fmtDur(d.dur) + '</b><small>' + (d.start ? 'Ends at ' + fromMin(toMin(d.start) + d.dur) : 'Pick a start time') + '</small></div>' +
+      '<button type="button" class="stp" data-act="durStep" data-v="15" aria-label="Longer"' + (d.dur >= 180 ? ' disabled' : '') + '>+</button></div>';
+  }
+  function okStart(date, win, dur, m, strict) {
+    if (m < toMin(win.from) || m + dur > toMin(win.to)) return false;
+    return !strict || !conflicts(date, fromMin(m), dur, null, win).length;
+  }
+  function startPicker(date, win, d, strict) {
+    var S = toMin(win.from), E = toMin(win.to), h0 = Math.floor(S / 60), h1 = Math.ceil(E / 60) - 1;
+    var cur = d.start ? toMin(d.start) : -1, curH = cur < 0 ? -1 : Math.floor(cur / 60);
+    var hours = '', mins = '', h;
+    for (h = h0; h <= h1; h++) {
+      var any = [0, 15, 30, 45].some(function (m) { return okStart(date, win, d.dur, h * 60 + m, strict); });
+      hours += '<button type="button" class="tchip' + (h === curH ? ' on' : '') + (any ? '' : ' gone') + '" data-act="pickHour" data-v="' + h + '"' + (strict && !any ? ' disabled' : '') + '>' + pad(h) + '</button>';
+    }
+    if (curH >= 0) {
+      [0, 15, 30, 45].forEach(function (m) {
+        var t = curH * 60 + m, ok = okStart(date, win, d.dur, t, strict);
+        mins += '<button type="button" class="tchip' + (t === cur ? ' on' : '') + (ok ? '' : ' gone') + '" data-act="pickMin" data-v="' + t + '"' + (strict && !ok ? ' disabled' : '') + '>:' + pad(m) + '</button>';
+      });
+    }
+    return '<div class="hgrid">' + hours + '</div>' + (curH >= 0 ? '<span class="lbl2">Minutes</span><div class="mgrid">' + mins + '</div>' : '');
+  }
+  function timeline(date, win) {
+    var segs = segments(date, win), S = toMin(win.from), E = toMin(win.to), lab = '', h;
+    var bar = segs.map(function (g) { return '<span class="tl-seg ' + (g.rem > 0 ? 'free' : 'busy') + '" style="flex: ' + (g.e - g.s) + ' 1 0"></span>'; }).join('');
+    for (h = Math.ceil(S / 60); h * 60 <= E; h += (E - S > 360 ? 3 : 1)) lab += '<span>' + pad(h) + '</span>';
+    return '<div class="tl">' + bar + '</div><div class="tl-lab">' + lab + '</div>';
+  }
+  function freeChips(date, win, act, idv) {
+    var segs = freeSegs(date, win);
+    if (!segs.length) return '<p class="muted">Fully booked</p>';
+    return '<div class="fchips">' + segs.map(function (s) {
+      return '<button type="button" class="fchip" data-act="' + act + '"' + (idv ? ' data-id="' + idv + '"' : '') + ' data-v="' + (idv ? date + '|' + s.s : s.s) + '"><b>' + fromMin(s.s) + ' to ' + fromMin(s.e) + '</b>' +
+        (s.rem < win.cap ? '<small>' + s.rem + (s.rem > 1 ? ' spots' : ' spot') + '</small>' : '') + '</button>';
+    }).join('') + '</div>';
+  }
+  function bookForm(date, win, d) {
+    var direct = win.id === 'home';
+    var bad = d.start ? conflicts(date, d.start, d.dur, null, win) : [];
+    var err = d.err || '';
+    if (!err && direct && bad.length) err = 'That time is not free. Please pick a free time.';
+    var label = direct ? (d.start ? 'Book ' + fmtDate(date) + ', ' + d.start + ' to ' + fromMin(toMin(d.start) + d.dur) : 'Book now') : 'Send request';
+    return '<div class="field"><span class="lbl">Start time</span>' + startPicker(date, win, d, direct) + '</div>' +
+      '<div class="field"><span class="lbl">How long</span>' + lenStepper(d) + '</div>' +
+      (!direct && bad.length ? '<p class="warnline">That overlaps a booked or closed time. You can still send it, and Michela may suggest another time.</p>' : '') +
+      '<div class="field"><span class="lbl">You <span class="opt">(remembered on this phone)</span></span><div class="row2">' +
+      '<div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
+      '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
+      '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message if something changes)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div></div>' +
+      '<div class="field"><label for="f-note">Note <span class="opt">(optional, for example I can only do 1h20 of it)</span></label><textarea id="f-note" data-scope="draft" data-field="note">' + esc(d.note) + '</textarea></div>' +
+      (!direct ? '<p class="hint">Not booked yet. Michela answers and you see it under My requests.</p>' : '<p class="hint">You are booked straight away. No waiting.</p>') +
+      (err ? '<p class="err">' + esc(err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary big" data-act="submit">' + esc(label) + '</button></div>';
+  }
+  function xName() { return state.rules.length === 1 ? state.rules[0].studio : 'Other studios'; }
+  function bottomNav(items) {
+    var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone) && (r.status === 'pending' || r.status === 'proposed'); }).length;
+    return '<nav class="bnav" aria-label="Pages"><div class="bnav-in">' + items.map(function (it) {
+      var on = ui.ctab === it[0];
+      return '<button type="button" data-act="ctab" data-v="' + it[0] + '" aria-pressed="' + on + '">' + esc(it[1]) + (it[0] === 'mine' && mine ? ' <span class="badge">' + mine + '</span>' : '') + '</button>';
+    }).join('') + '</div></nav>';
+  }
+  function backBtn(act, text) { return '<div><button type="button" class="link" data-act="' + act + '">' + esc(text) + '</button></div>'; }
+
+  /* ---------- Version D: one tab for Michela's studio, one for the other studio ---------- */
+  function homeViewD() {
+    var d = ui.draft;
+    var dates = weekendDays(28).filter(function (x) { return !wholeBlocked(x); });
+    if (d.wid !== 'home' || !d.date || dates.indexOf(d.date) < 0) { d.wid = 'home'; d.date = dates[0] || ''; d.start = ''; d.auto = true; }
+    if (!d.date) return '<section class="card"><h2>' + esc(HOME.loc) + '</h2><p class="muted">No days open right now.</p></section>';
+    defaultStart();
+    var strip = dates.map(function (x) {
+      var p = parseISO(x), full = !freeSegs(x, HOME).length;
+      return '<button type="button" class="dchip' + (x === d.date ? ' on' : '') + (full ? ' full' : '') + '" data-act="pickDay" data-v="' + x + '"><small>' + DAYS[p.getDay()] + '</small><b>' + p.getDate() + '</b></button>';
+    }).join('');
+    return '<section class="card"><div><h2>' + esc(HOME.loc) + '</h2><p class="muted">Pick a time and you are booked. No waiting.</p></div>' +
+      '<div class="field"><span class="lbl">Day</span><div class="daystrip">' + strip + '</div></div>' +
+      '<div class="field"><span class="lbl">Free on ' + esc(fmtDate(d.date)) + '</span>' + timeline(d.date, HOME) + freeChips(d.date, HOME, 'pickFree') + '</div>' +
+      bookForm(d.date, HOME, d) + '</section>';
+  }
+  function xViewD() {
+    var d = ui.draft;
+    if (!state.rules.length) return '<section class="card"><h2>Other studios</h2><p class="muted">No other studio is listed yet.</p></section>';
+    if (ui.xsel) {
+      var win = winPick(d.date, d.wid);
+      defaultStart();
+      return backBtn('xBack', 'Back to the list') + '<section class="card"><div><h2>Request at ' + esc(win.loc) + '</h2><p class="muted">' + esc(fmtDate(d.date)) + ', open ' + win.from + ' to ' + win.to + (win.cap > 1 ? '. ' + capText(win) : '') + '. Michela confirms.</p></div>' +
+        '<div class="field"><span class="lbl">Free times</span>' + timeline(d.date, win) + freeChips(d.date, win, 'pickFree') + '</div>' +
+        bookForm(d.date, win, d) + '</section>';
+    }
+    var reg = knownClient(d.phone || state.me.phone);
+    var html = '<section><h2>' + esc(xName()) + '</h2><p class="muted">Send a request. Michela confirms it and you see her answer under My sessions.' + (reg ? ' As a regular client you can also ask for days that are not open yet.' : '') + '</p></section>';
+    state.rules.forEach(function (r) {
+      var rows = weekendDays(28).filter(function (x) {
+        return r.days.indexOf(parseISO(x).getDay()) > -1 && !wholeBlocked(x) && (state.open[r.id + '|' + x] || reg);
+      });
+      html += (state.rules.length > 1 ? '<p class="wkh">' + esc(r.studio) + '</p>' : '') + (rows.length ? rows.map(function (x) {
+        var w = windowsFor(x).filter(function (y) { return y.id === r.id; })[0];
+        var mx = Math.max.apply(null, segments(x, w).map(function (g) { return g.rem; }));
+        return '<div class="daycard xday"><div><div class="dayrow"><b>' + esc(fmtDate(x)) + '</b></div><p class="loc">' + w.from + ' to ' + w.to + ' &nbsp; ' + (mx > 0 ? mx + (mx > 1 ? ' spots free' : ' spot free') : 'Full') + (w.open ? '' : ' &nbsp; Michela checks with the studio') + '</p></div>' +
+          '<button type="button" class="btn primary small" data-act="xPick" data-id="' + r.id + '" data-v="' + x + '"' + (mx > 0 ? '' : ' disabled') + '>Request</button></div>';
+      }).join('') : '<div class="card"><p class="muted">No open days yet. Check back soon.</p></div>');
+    });
+    return html;
+  }
+  function clientViewD() {
+    var items = [['home', HOME.loc]];
+    if (state.rules.length) items.push(['x', xName()]);
+    items.push(['mine', 'My sessions']);
+    if (ui.ctab !== 'home' && ui.ctab !== 'x' && ui.ctab !== 'mine') ui.ctab = 'home';
+    if (ui.ctab === 'x' && !state.rules.length) ui.ctab = 'home';
+    var body = ui.ctab === 'home' ? homeViewD() : ui.ctab === 'x' ? xViewD() : mineView();
+    return body + bottomNav(items);
+  }
+
+  /* ---------- Version E: calendar ---------- */
+  function monthDates(mk) {
+    var y = Number(mk.slice(0, 4)), m = Number(mk.slice(5)), out = [], n = new Date(y, m, 0).getDate(), i;
+    for (i = 1; i <= n; i++) out.push(iso(new Date(y, m - 1, i)));
+    return out;
+  }
+  function eWindows(date, mode) {
+    if (wholeBlocked(date)) return [];
+    var reg = knownClient(ui.draft.phone || state.me.phone);
+    return windowsFor(date).filter(function (w) { return mode === 'home' ? w.id === 'home' : (w.id !== 'home' && (w.open || reg)); });
+  }
+  function eFree(date, mode) {
+    return eWindows(date, mode).some(function (w) { return freeSegs(date, w).length > 0; });
+  }
+  function eView() {
+    if (ui.ctab === 'mine') return mineView();
+    var d = ui.draft;
+    var t1 = tomorrow(), hz = horizon();
+    if (ui.cform) {
+      var win = winPick(d.date, d.wid);
+      var direct = win.id === 'home';
+      return backBtn('cBack', 'Back to calendar') + '<section class="card"><div><h2>' + (direct ? 'Book ' : 'Ask for ') + esc(fmtDate(d.date)) + '</h2><p class="muted">' + esc(win.loc) + (direct ? '. You are booked straight away.' : '. Michela confirms.') + '</p></div>' +
+        '<div class="field"><span class="lbl">Free times</span>' + timeline(d.date, win) + freeChips(d.date, win, 'pickFree') + '</div>' +
+        bookForm(d.date, win, d) + '</section>';
+    }
+    if (!ui.cal || (ui.cal === 'x' && !state.rules.length)) ui.cal = 'home';
+    var mode = ui.cal;
+    if (!ui.cm) ui.cm = monthKey(t1);
+    var minM = monthKey(t1), maxM = monthKey(hz);
+    var dates = monthDates(ui.cm);
+    if (ui.csel && (eWindows(ui.csel, mode).length === 0)) ui.csel = '';
+    if (!ui.csel) {
+      var firstFree = dates.filter(function (x) { return x >= t1 && x <= hz && eFree(x, mode); })[0];
+      ui.csel = firstFree || '';
+    }
+    var first = parseISO(dates[0]).getDay(), lead = (first + 6) % 7, cells = '', i;
+    for (i = 0; i < lead; i++) cells += '<span></span>';
+    dates.forEach(function (x) {
+      var inRange = x >= t1 && x <= hz, cls = 'off', dis = ' disabled';
+      if (inRange) {
+        if (eFree(x, mode)) { cls = 'free'; dis = ''; } else if (eWindows(x, mode).length || mode === 'home') { cls = 'full'; }
+      }
+      if (x === ui.csel) cls = 'sel';
+      cells += '<button type="button" class="cell ' + cls + '"' + dis + ' data-act="calDay" data-v="' + x + '" aria-label="' + esc(fmtDate(x)) + '">' + parseISO(x).getDate() + '</button>';
+    });
+    var toggle = state.rules.length ? '<div class="switch" role="group" aria-label="Studio">' +
+      '<button type="button" data-act="calMode" data-v="home" aria-pressed="' + (mode === 'home') + '">' + esc(HOME.loc) + '</button>' +
+      '<button type="button" data-act="calMode" data-v="x" aria-pressed="' + (mode === 'x') + '">' + esc(xName()) + '</button></div>' : '';
+    var panel = '';
+    if (ui.csel) {
+      panel = '<section class="card"><div><h2>' + esc(fmtDate(ui.csel)) + '</h2><p class="muted">' + (mode === 'home' ? 'Tap a free time to book it. You are booked straight away.' : 'Tap a free time to ask for it. Not booked until Michela says yes.') + '</p></div>' +
+        eWindows(ui.csel, mode).map(function (w) {
+          return '<div class="place">' + (mode === 'x' || state.rules.length > 1 ? '<p class="loc">' + esc(w.loc) + (w.cap > 1 ? ', ' + capText(w) : '') + '</p>' : '') + timeline(ui.csel, w) + freeChips(ui.csel, w, 'calPick', w.id) + '</div>';
+        }).join('') + '</section>';
+    } else {
+      panel = '<section class="card"><p class="muted">' + (mode === 'home' ? 'No free times this month.' : 'No open days this month.') + '</p></section>';
+    }
+    return toggle + '<section class="card"><div class="cal-head"><h2>' + esc(monthLabel(ui.cm)) + '</h2><div class="btns">' +
+      '<button type="button" class="round" data-act="calPrev" aria-label="Previous month"' + (ui.cm <= minM ? ' disabled' : '') + '>&lsaquo;</button>' +
+      '<button type="button" class="round" data-act="calNext" aria-label="Next month"' + (ui.cm >= maxM ? ' disabled' : '') + '>&rsaquo;</button></div></div>' +
+      '<div class="cal-grid"><span class="cal-wd">Mo</span><span class="cal-wd">Tu</span><span class="cal-wd">We</span><span class="cal-wd">Th</span><span class="cal-wd">Fr</span><span class="cal-wd">Sa</span><span class="cal-wd">Su</span>' + cells + '</div>' +
+      '<p class="muted"><span class="dot"></span> Free times &nbsp; <span class="dot grey"></span> Fully booked</p></section>' + panel;
+  }
+  function clientViewE() {
+    if (ui.ctab !== 'cal' && ui.ctab !== 'mine') ui.ctab = 'cal';
+    return eView() + bottomNav([['cal', 'Calendar'], ['mine', 'My requests']]);
+  }
+
+  function clientViewClassic() {
     var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone) && (r.status === 'pending' || r.status === 'proposed'); }).length;
     var tabs = '<div class="tabs" role="group" aria-label="Client pages">' +
       '<button type="button" data-act="ctab" data-v="free" aria-pressed="' + (ui.ctab === 'free') + '">Free times</button>' +
@@ -836,7 +1093,8 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     var d = ui.draft;
     if (!d.date) return;
     if (!d.start || d.auto) {
-      var w = winPick(d.date, d.wid), g = freeSegs(d.date, w)[0];
+      var w = winPick(d.date, d.wid), gs = freeSegs(d.date, w);
+      var g = gs.filter(function (x) { return x.e - x.s >= d.dur; })[0] || gs[0];
       d.start = g ? fromMin(g.s) : w.from;
       d.auto = true;
     }
@@ -880,7 +1138,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       if (!/^\d{4,8}$/.test(v)) { ui.pin = { val: v, err: 'Use 4 to 8 digits.' }; render(); return; }
       ui.pin = { val: '', err: '' }; save({ newCode: v }); render();
     },
-    ctab: function (id, v) { ui.ctab = v; ui.sent = null; render(); window.scrollTo(0, 0); },
+    ctab: function (id, v) { ui.ctab = v; ui.sent = null; ui.xsel = false; ui.cform = false; render(); window.scrollTo(0, 0); },
     mtab: function (id, v) { ui.mtab = v; render(); window.scrollTo(0, 0); },
     pickSlot: function (id, v) {
       var p = v.split('|');
@@ -889,6 +1147,35 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     },
     openDay: function (id, v) { ui.openDay = ui.openDay === v ? null : v; render(); },
     pickDur: function (id, v) { ui.draft.dur = Number(v); render(); },
+    durStep: function (id, v) {
+      var d = ui.draft;
+      d.dur = clampDur(d.dur + Number(v));
+      if (d.auto) { d.start = ''; defaultStart(); }
+      render();
+    },
+    pickHour: function (id, v) {
+      var d = ui.draft, w = winPick(d.date, d.wid), strict = w.id === 'home', h = Number(v), pick = h * 60, i, m;
+      for (i = 0; i < 4; i++) { m = h * 60 + i * 15; if (okStart(d.date, w, d.dur, m, strict)) { pick = m; break; } }
+      d.start = fromMin(pick); d.auto = false; render();
+    },
+    pickMin: function (id, v) { ui.draft.start = fromMin(Number(v)); ui.draft.auto = false; render(); },
+    pickFree: function (id, v) { ui.draft.start = fromMin(Number(v)); ui.draft.auto = false; render(); },
+    pickDay: function (id, v) { var d = ui.draft; d.date = v; d.wid = 'home'; d.start = ''; d.auto = true; d.err = ''; render(); },
+    xPick: function (id, v) {
+      var d = ui.draft; d.date = v; d.wid = id; d.start = ''; d.auto = true; d.err = ''; ui.xsel = true;
+      render(); window.scrollTo(0, 0);
+    },
+    xBack: function () { ui.xsel = false; render(); window.scrollTo(0, 0); },
+    calMode: function (id, v) { ui.cal = v; ui.csel = ''; render(); },
+    calDay: function (id, v) { ui.csel = v; render(); },
+    calPrev: function () { var p = ui.cm.split('-').map(Number); ui.cm = iso(new Date(p[0], p[1] - 2, 1)).slice(0, 7); ui.csel = ''; render(); },
+    calNext: function () { var p = ui.cm.split('-').map(Number); ui.cm = iso(new Date(p[0], p[1], 1)).slice(0, 7); ui.csel = ''; render(); },
+    calPick: function (id, v) {
+      var p = v.split('|'), d = ui.draft;
+      d.date = p[0]; d.wid = id; d.start = fromMin(Number(p[1])); d.auto = false; d.err = ''; ui.cform = true;
+      render(); window.scrollTo(0, 0);
+    },
+    cBack: function () { ui.cform = false; render(); window.scrollTo(0, 0); },
     submit: function () {
       var d = ui.draft;
       var err = '';
@@ -908,7 +1195,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
         saveMe();
         ui.draft = newDraft();
         ui.sent = j.id; ui.sentKind = j.status;
-        ui.ctab = 'mine';
+        ui.ctab = 'mine'; ui.xsel = false; ui.cform = false;
         return refresh(true).then(function () { render(); window.scrollTo(0, 0); toast(j.status === 'accepted' ? 'Booked' : 'Request sent'); });
       }).catch(function (e) {
         ui.busy = false; d.err = e.message; render();

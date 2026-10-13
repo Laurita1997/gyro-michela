@@ -10,7 +10,8 @@ const json = (o: unknown, s = 200) =>
   new Response(JSON.stringify(o), { status: s, headers: { ...CORS, "content-type": "application/json" } });
 const fail = (msg: string, s = 400) => json({ error: msg }, s);
 
-const DUR = [60, 90, 120, 150, 180];
+const DUR: number[] = [];
+for (let m = 60; m <= 180; m += 15) DUR.push(m);
 const digits = (s: unknown) => String(s ?? "").replace(/\D/g, "");
 const samePhone = (a: unknown, b: unknown) => !!digits(a) && digits(a) === digits(b);
 const clip = (s: unknown, n: number) => String(s ?? "").slice(0, n);
