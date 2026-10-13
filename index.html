@@ -474,7 +474,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 
   /* ---------- header ---------- */
   function head() {
-    var title = '<div class="titlebar"><div><h1>Gyro with Michela</h1><p class="sub">Sessions at Michela\'s studio and at another studio. Send a request and she replies.</p></div>' +
+    var title = '<div class="titlebar"><div><h1>Gyro with Michela</h1><p class="sub">Book Michela\'s studio straight away. For other studios you send a request and she replies.</p></div>' +
       (state.unlocked ? '' : '<button type="button" class="btn ghost small" data-act="openCode" aria-label="Michela login">Michela</button>') + '</div>';
     var nav = state.unlocked ? '<div class="switch" role="group" aria-label="Switch view">' +
       '<button type="button" data-act="view" data-v="client" aria-pressed="' + (ui.view === 'client') + '">Client view</button>' +
@@ -494,7 +494,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     } else if (r.status === 'accepted') {
       status = pill('ok', 'Confirmed');
       body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
-      actions = '<a class="btn secondary" href="' + gcal(r) + '" target="_blank" rel="noopener">Add to Google Calendar</a>';
+      actions = '<a class="btn secondary" href="' + gcal(r) + '" target="_blank" rel="noopener">Add to Google Calendar</a><button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
     } else if (r.status === 'proposed') {
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
@@ -534,8 +534,8 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
           (open ? r.items.map(function (it) { return '<div class="place"><p class="loc">' + esc(it.w.loc) + (it.w.cap > 1 ? ', ' + capText(it.w) : '') + '</p>' + slotsHtml(r.d, it) + '</div>'; }).join('') : '') + '</div>';
       }).join('') + '</section>';
     }).join('');
-    return '<section><h2>Free times</h2><p class="muted">Tap a time to request it. Michela confirms every request.' +
-      (state.rules.length ? ' Regular clients can also request other studio days on the Request tab.' : '') + '</p></section>' + body;
+    return '<section><h2>Free times</h2><p class="muted">Tap a time to book it.' +
+      (state.rules.length ? ' At Michela\'s studio you are booked straight away. Other studios are a request that Michela confirms. Regular clients can also request other studio days on the Book tab.' : ' You are booked straight away.') + '</p></section>' + body;
   }
 
   function formView() {
@@ -568,26 +568,30 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       if (win && conflicts(d.date, d.start, d.dur, null, win).length) ends += '<p class="warnline">That overlaps a booked or closed time. You can still send it, and Michela may suggest another time.</p>';
     }
     var reg = knownClient(d.phone) && state.rules.length;
-    return '<section class="card" id="requestform"><h2>Request a session</h2>' +
+    var direct = !!(win && win.id === 'home');
+    if (direct && d.start && conflicts(d.date, d.start, d.dur, null, win).length) {
+      ends = ends.replace(/<p class="warnline">.*?<\/p>/, '') + '<p class="err">That time is not free. Please pick a free time from the list above.</p>';
+    }
+    return '<section class="card" id="requestform"><h2>' + (direct ? 'Book a session' : 'Request a session') + '</h2>' +
       '<div class="row2"><div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
       '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
       '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message when Michela replies)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div>' +
       '<div class="field"><label for="f-day">Day</label><select id="f-day" data-scope="draft" data-field="day" data-rerender>' + selOpts + '</select>' +
       (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + '</div>' +
-      whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') +
+      whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') + (win ? '<p class="muted">' + (direct ? 'You are booked straight away. No reply needed.' : 'This one is a request. Michela confirms it.') + '</p>' : '') +
       '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
       '<div class="field"><span class="lbl">How long do you usually take?</span><div class="chips dur">' + durChips(d.dur) + '</div>' + ends + '</div>' +
       '<div class="field"><label for="f-note">Note for Michela <span class="opt">(optional, for example if you could come earlier or later)</span></label><textarea id="f-note" data-scope="draft" data-field="note" placeholder="I can also come up to an hour earlier or later">' + esc(d.note) + '</textarea></div>' +
       (d.err ? '<p class="err">' + esc(d.err) + '</p>' : '') +
-      '<div class="btns"><button type="button" class="btn primary" data-act="submit">Send request</button></div></section>';
+      '<div class="btns"><button type="button" class="btn primary" data-act="submit">' + (direct ? 'Book now' : 'Send request') + '</button></div></section>';
   }
 
   function mineView() {
     var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone); })
       .sort(function (a, b) { return b.created - a.created; }).slice(0, 8);
     var h = '';
-    if (ui.sent) h += '<div class="banner ok">Request sent. Michela will answer here. Come back to check, or leave an email to get a message.</div>';
-    if (!mine.length) return h + '<div class="card"><p>No requests yet. Pick a time on the Free times tab.</p></div>';
+    if (ui.sent) h += ui.sentKind === 'accepted' ? '<div class="banner ok">You are booked. See you then!</div>' : '<div class="banner ok">Request sent. Michela will answer here. Come back to check, or leave an email to get a message.</div>';
+    if (!mine.length) return h + '<div class="card"><p>Nothing yet. Pick a time on the Free times tab.</p></div>';
     return h + mine.map(reqCardClient).join('');
   }
 
@@ -595,8 +599,8 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
     var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone) && (r.status === 'pending' || r.status === 'proposed'); }).length;
     var tabs = '<div class="tabs" role="group" aria-label="Client pages">' +
       '<button type="button" data-act="ctab" data-v="free" aria-pressed="' + (ui.ctab === 'free') + '">Free times</button>' +
-      '<button type="button" data-act="ctab" data-v="request" aria-pressed="' + (ui.ctab === 'request') + '">Request</button>' +
-      '<button type="button" data-act="ctab" data-v="mine" aria-pressed="' + (ui.ctab === 'mine') + '">My requests' + (mine ? ' <span class="badge">' + mine + '</span>' : '') + '</button></div>';
+      '<button type="button" data-act="ctab" data-v="request" aria-pressed="' + (ui.ctab === 'request') + '">Book</button>' +
+      '<button type="button" data-act="ctab" data-v="mine" aria-pressed="' + (ui.ctab === 'mine') + '">My sessions' + (mine ? ' <span class="badge">' + mine + '</span>' : '') + '</button></div>';
     return tabs + (ui.ctab === 'free' ? freeView() : ui.ctab === 'request' ? formView() : mineView());
   }
 
@@ -652,6 +656,14 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
         return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span></li>';
       }).join('') + '</ul></section>';
     }
+    var today = iso(new Date());
+    var booked = state.requests.filter(function (r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= today; })
+      .sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
+    if (booked.length) {
+      h += '<section class="card"><h2>Booked by clients</h2><ul class="items">' + booked.map(function (r) {
+        return '<li><span class="t">' + esc(fmtDate(sessionDate(r))) + ' ' + r.start + '</span><span>' + esc(r.name) + ', ' + esc(fmtDur(r.fdur)) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button></span></li>';
+      }).join('') + '</ul></section>';
+    }
     return h;
   }
 
@@ -668,7 +680,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
         var wins = windowsFor(d).filter(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
         var body = wins.map(function (w) {
           var rowsHtml = sessionsIn(d, w).map(function (r) {
-            return '<li><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span>' + esc(r.name) + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : '') + '</span></li>';
+            return '<li><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span>' + esc(r.name) + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button>') + '</span></li>';
           }).join('') + state.standing.filter(function (x) {
             return x.wid === w.id && x.dow === parseISO(d).getDay() && state.skips[x.id + '|' + d];
           }).map(function (x) {
@@ -886,6 +898,7 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
       else if (!d.start) err = 'Pick a start time.';
       if (err) { d.err = err; render(); return; }
       var w = winPick(d.date, d.wid);
+      if (w.id === 'home' && conflicts(d.date, d.start, d.dur, null, w).length) { d.err = 'That time is not free. Please pick a free time.'; render(); return; }
       var r = { name: d.name.trim(), phone: d.phone.trim(), email: d.email.trim(), date: d.date, wid: w.id, reqStart: d.start, dur: d.dur, note: d.note.trim() };
       if (ui.busy) return;
       ui.busy = true;
@@ -894,14 +907,20 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
         state.me = { name: r.name, phone: r.phone, email: r.email, dur: r.dur };
         saveMe();
         ui.draft = newDraft();
-        ui.sent = j.id;
+        ui.sent = j.id; ui.sentKind = j.status;
         ui.ctab = 'mine';
-        return refresh(true).then(function () { render(); window.scrollTo(0, 0); toast('Request sent'); });
+        return refresh(true).then(function () { render(); window.scrollTo(0, 0); toast(j.status === 'accepted' ? 'Booked' : 'Request sent'); });
       }).catch(function (e) {
         ui.busy = false; d.err = e.message; render();
       });
     },
-    cancel: function (id) { A._own('cancel', id, 'Request cancelled'); },
+    cancel: function (id) { var r = find(id); A._own('cancel', id, r && r.status === 'accepted' ? 'Session cancelled' : 'Request cancelled'); },
+    cancelSess: function (id) {
+      var r = find(id);
+      if (!r) return;
+      r.status = 'cancelled'; r.upd = Date.now();
+      save(); render(); toast('Session cancelled');
+    },
     acceptProposal: function (id) { A._own('accept_proposal', id, 'Session confirmed'); },
     declineProposal: function (id) { A._own('decline_proposal', id, 'Declined'); },
     _own: function (action, id, msg) {

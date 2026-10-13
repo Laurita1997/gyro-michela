@@ -77,6 +77,34 @@ async function checkCode(code: string) {
   return { ok: false, msg: "That code does not match." };
 }
 
+const toMin = (t: string) => { const p = String(t).split(":").map(Number); return p[0] * 60 + p[1]; };
+const fromMin = (n: number) => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
+const HOME_FROM = "09:00", HOME_TO = "21:00";
+
+// returns a message when Michela's own studio cannot take this booking, else ""
+function homeConflict(d: any, date: string, start: string, dur: number): string {
+  const s = toMin(start), e = s + dur;
+  if (s < toMin(HOME_FROM) || e > toMin(HOME_TO)) return "That is outside Michela's hours (09:00 to 21:00).";
+  const buf = 15;
+  const dow = new Date(date + "T12:00:00Z").getUTCDay();
+  const sess: { a: number; z: number }[] = [];
+  (d.requests || []).forEach((r: any) => {
+    if (r.status === "accepted" && (r.fdate || r.date) === date && widOf(r) === "home") sess.push({ a: toMin(r.start), z: toMin(r.start) + Number(r.fdur) });
+  });
+  (d.standing || []).forEach((x: any) => {
+    if (widOf(x) === "home" && x.dow === dow && !(d.skips || {})[x.id + "|" + date]) sess.push({ a: toMin(x.start), z: toMin(x.start) + Number(x.dur) });
+  });
+  for (let t = s; t < e; t += 15) {
+    if (sess.some((q) => t < q.z + buf && t + 15 > q.a - buf)) return "That time was just taken. Please pick another time.";
+  }
+  for (const b of d.blocks || []) {
+    if (b.date !== date) continue;
+    const a = b.whole ? 0 : toMin(b.from), z = b.whole ? 1440 : toMin(b.to);
+    if (s < z && e > a) return "That time is closed.";
+  }
+  return "";
+}
+
 function todayISO() {
   return new Date(Date.now() - 24 * 3600e3).toISOString().slice(0, 10);
 }
@@ -106,6 +134,15 @@ Deno.serve(async (req: Request) => {
         const d = row.data;
         const wid = r.wid || "home";
         let loc = "Michela's studio";
+        let direct = false;
+        if (wid === "home") {
+          const last = new Date(Date.now() + 30 * 24 * 3600e3).toISOString().slice(0, 10);
+          if (r.date < todayISO() || r.date > last) return { abort: true, err: "That day is not open to book yet." };
+          if ((d.blocks || []).some((b: any) => b.date === r.date && b.whole)) return { abort: true, err: "That day is not available." };
+          const bad = homeConflict(d, r.date, r.reqStart, Number(r.dur));
+          if (bad) return { abort: true, err: bad };
+          direct = true;
+        }
         if (wid !== "home") {
           const rule = (d.rules || []).find((x: any) => x.id === wid);
           if (!rule) return { abort: true, err: "That studio is not available." };
@@ -116,17 +153,22 @@ Deno.serve(async (req: Request) => {
         }
         const pend = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && (x.status === "pending" || x.status === "proposed")).length;
         if (pend >= 6) return { abort: true, err: "You already have several open requests. Please wait for Michela's reply." };
+        if (direct) {
+          const upcoming = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && x.status === "accepted" && (x.fdate || x.date) >= todayISO() && widOf(x) === "home").length;
+          if (upcoming >= 4) return { abort: true, err: "You already have 4 upcoming sessions. Please cancel one or ask Michela." };
+        }
         created = {
           id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           name, phone, email: clip(r.email, 120).trim(), date: r.date, wid, loc,
           reqStart: r.reqStart, dur: Number(r.dur), note: clip(r.note, 500).trim(),
           status: "pending", created: Date.now(), upd: Date.now(),
         };
+        if (direct) Object.assign(created, { status: "accepted", direct: true, fdate: r.date, start: r.reqStart, fdur: Number(r.dur) });
         d.requests = [...(d.requests || []), created];
         return { data: d };
       });
       if (res.abort) return fail(res.err);
-      return json({ ok: true, id: created.id });
+      return json({ ok: true, id: created.id, status: created.status });
     }
 
     if (action === "cancel" || action === "accept_proposal" || action === "decline_proposal") {
