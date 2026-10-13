@@ -280,7 +280,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       var s = localStorage.getItem(KEY);
       if (s) { var p = JSON.parse(s); if (p && p.me) return p.me; }
     } catch (e) { /* storage unavailable */ }
-    return { name: '', phone: '', email: '', dur: 60 };
+    return { name: '', phone: '', dur: 60 };
   }
   function saveMe() { try { localStorage.setItem(KEY, JSON.stringify({ me: state.me })); } catch (e) { /* ignore */ } }
 
@@ -350,7 +350,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
   var ui;
   function newDraft() {
-    return { name: state.me.name || '', phone: state.me.phone || '', email: state.me.email || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
+    return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, err: '' }; }
@@ -639,7 +639,6 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return '<section class="card" id="requestform"><h2>' + (direct ? 'Book a session' : 'Request a session') + '</h2>' +
       '<div class="row2"><div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
       '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
-      '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message when Michela replies)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div>' +
       '<div class="field"><label for="f-day">Day</label><select id="f-day" data-scope="draft" data-field="day" data-rerender>' + selOpts + '</select>' +
       (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + '</div>' +
       whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') + (win ? '<p class="muted">' + (direct ? 'You are booked straight away. No reply needed.' : 'This one is a request. Michela confirms it.') + '</p>' : '') +
@@ -654,7 +653,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone); })
       .sort(function (a, b) { return b.created - a.created; }).slice(0, 8);
     var h = '';
-    if (ui.sent) h += ui.sentKind === 'accepted' ? '<div class="banner ok">You are booked. See you then!</div>' : '<div class="banner ok">Request sent. Michela will answer here. Come back to check, or leave an email to get a message.</div>';
+    if (ui.sent) h += ui.sentKind === 'accepted' ? '<div class="banner ok">You are booked. See you then!</div>' : '<div class="banner ok">Request sent. Michela will answer here and may message you on WhatsApp.</div>';
     if (!mine.length) return h + '<div class="card"><p>Nothing yet. Pick a time on the Free times tab.</p></div>';
     return h + mine.map(reqCardClient).join('');
   }
@@ -714,14 +713,17 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return '<div class="field"><span class="lbl">Start time</span>' + startPicker(date, win, d, direct) + '</div>' +
       '<div class="field"><span class="lbl">How long</span>' + lenStepper(d) + '</div>' +
       (!direct && bad.length ? '<p class="warnline">That overlaps a booked or closed time. You can still send it, and Michela may suggest another time.</p>' : '') +
-      '<div class="field"><span class="lbl">You <span class="opt">(remembered on this phone)</span></span><div class="row2">' +
-      '<div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
-      '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
-      '<div class="field"><label for="f-email">Email <span class="opt">(optional, for a message if something changes)</span></label><input id="f-email" type="email" data-scope="draft" data-field="email" autocomplete="email" value="' + esc(d.email) + '"></div></div>' +
       '<div class="field"><label for="f-note">Note <span class="opt">(optional, for example I can only do 1h20 of it)</span></label><textarea id="f-note" data-scope="draft" data-field="note">' + esc(d.note) + '</textarea></div>' +
       (!direct ? '<p class="hint">Not booked yet. Michela answers and you see it under My requests.</p>' : '<p class="hint">You are booked straight away. No waiting.</p>') +
       (err ? '<p class="err">' + esc(err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary big" data-act="submit">' + esc(label) + '</button></div>';
+  }
+  function youBar() {
+    var d = ui.draft;
+    return '<section class="card youbar"><span class="lbl">You <span class="opt">(remembered on this phone)</span></span><div class="row2">' +
+      '<div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
+      '<div class="field"><label for="f-phone">WhatsApp number</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
+      '<p class="muted">Michela will contact you on WhatsApp.</p></section>';
   }
   function xName() { return state.rules.length === 1 ? state.rules[0].studio : 'Other studios'; }
   function bottomNav(items) {
@@ -781,7 +783,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     if (ui.ctab !== 'home' && ui.ctab !== 'x' && ui.ctab !== 'mine') ui.ctab = 'home';
     if (ui.ctab === 'x' && !state.rules.length) ui.ctab = 'home';
     var body = ui.ctab === 'home' ? homeViewD() : ui.ctab === 'x' ? xViewD() : mineView();
-    return body + bottomNav(items);
+    return (ui.ctab === 'mine' ? '' : youBar()) + body + bottomNav(items);
   }
 
   /* ---------- Version E: calendar ---------- */
@@ -849,7 +851,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
   function clientViewE() {
     if (ui.ctab !== 'cal' && ui.ctab !== 'mine') ui.ctab = 'cal';
-    return eView() + bottomNav([['cal', 'Calendar'], ['mine', 'My requests']]);
+    return (ui.ctab === 'mine' ? '' : youBar()) + eView() + bottomNav([['cal', 'Calendar'], ['mine', 'My requests']]);
   }
 
   function clientViewClassic() {
@@ -896,7 +898,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var w = winPick(r.date, widOf(r));
     var p = ui.panels[r.id];
     return '<div class="card req"><div class="req-head"><div class="req-name">' + esc(r.name) + '<span class="tag">' + (known ? 'Regular client' : 'New client') + '</span>' + (r.example ? '<span class="ex">example</span>' : '') + '</div></div>' +
-      '<p class="muted">Phone <span class="sel">' + esc(r.phone) + '</span>' + (r.email ? ' &nbsp; Email <span class="sel">' + esc(r.email) + '</span>' : '') + '</p>' +
+      '<p class="muted">Phone <span class="sel">' + esc(r.phone) + '</span>' + '</p>' +
       '<p class="line">' + esc(wantLine(r)) + '</p><p class="muted">' + esc(locOfReq(r)) + (w.open ? '' : '. Not in your listed times, so ask the studio first.') + '</p>' + (r.note ? '<p class="quote">' + esc(r.note) + '</p>' : '') +
       (p ? panelHtml(r, p) :
         '<div class="btns"><button type="button" class="btn primary" data-act="openPanel" data-v="accept" data-id="' + r.id + '">Accept</button>' +
@@ -1186,12 +1188,12 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (err) { d.err = err; render(); return; }
       var w = winPick(d.date, d.wid);
       if (w.id === 'home' && conflicts(d.date, d.start, d.dur, null, w).length) { d.err = 'That time is not free. Please pick a free time.'; render(); return; }
-      var r = { name: d.name.trim(), phone: d.phone.trim(), email: d.email.trim(), date: d.date, wid: w.id, reqStart: d.start, dur: d.dur, note: d.note.trim() };
+      var r = { name: d.name.trim(), phone: d.phone.trim(), date: d.date, wid: w.id, reqStart: d.start, dur: d.dur, note: d.note.trim() };
       if (ui.busy) return;
       ui.busy = true;
       api({ action: 'submit', request: r }).then(function (j) {
         ui.busy = false;
-        state.me = { name: r.name, phone: r.phone, email: r.email, dur: r.dur };
+        state.me = { name: r.name, phone: r.phone, dur: r.dur };
         saveMe();
         ui.draft = newDraft();
         ui.sent = j.id; ui.sentKind = j.status;
