@@ -134,6 +134,17 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
 .items li { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
 .items .t { font-weight: 600; font-variant-numeric: tabular-nums; min-width: 8em; }
+.items.sched { gap: 8px; }
+.items.sched li.srow { display: block; padding: 8px 10px 8px 12px; border-left: 4px solid var(--accent); background: var(--ground); border-radius: 10px; }
+.items.sched li.srow.other { border-left-color: var(--pending); }
+.srow .shead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.srow .sbody { margin-top: 2px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.srow .nm { font-weight: 500; }
+.chip { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip.home { background: var(--accent-soft); color: var(--accent); }
+.chip.other { background: var(--pending-soft); color: var(--pending); }
+.sempty { font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
 .rules > .rule { display: flex; flex-direction: column; gap: 10px; padding-block: 14px; border-top: 1px solid var(--line); }
 .rules > .rule:first-child { border-top: 0; padding-top: 0; }
 .foot { display: flex; justify-content: flex-start; }
@@ -528,8 +539,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var s = windowsFor(date).filter(function (w) { return w.id !== 'home'; }).map(function (w) { return w.loc; });
     return s.length ? ' (' + s.join(', ') + ')' : '';
   }
-  var dateOptions = function (sel) {
-    return allDates().map(function (d) { return '<option value="' + d + '"' + (d === sel ? ' selected' : '') + '>' + esc(fmtDate(d) + dateTag(d)) + '</option>'; }).join('');
+  var dateOptions = function (sel, plain) {
+    return allDates().map(function (d) { return '<option value="' + d + '"' + (d === sel ? ' selected' : '') + '>' + esc(fmtDate(d) + (plain ? '' : dateTag(d))) + '</option>'; }).join('');
   };
   var warnHtml = function (list) { return list.length ? '<ul class="warn">' + list.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>' : ''; };
   var pendingCount = function () { return state.requests.filter(function (r) { return r.status === 'pending'; }).length; };
@@ -905,10 +916,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var id = r.id, data = ' data-scope="panel" data-id="' + id + '"';
     var w = winPick(p.date, widOf(r));
     return '<li style="display:block"><div class="panel">' +
-      '<div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date) + '</select></div>' +
+      '<div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date, true) + '</select></div>' +
       '<div class="row2"><div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
       '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
-      '<p class="muted">' + esc(w.loc) + '</p>' +
+      '<p><span class="chip ' + (w.id === 'home' ? 'home' : 'other') + '">' + esc(w.loc) + '</span></p>' +
       warnHtml(conflicts(p.date, p.start, p.dur, r.id, w)) +
       '<div class="field"><label for="p-msg-' + id + '">Message to ' + esc(first(r.name)) + ' <span class="opt">(optional)</span></label><input type="text" id="p-msg-' + id + '"' + data + ' data-field="msg" value="' + esc(p.msg) + '" placeholder="Today I would like to give you 2 hours"></div>' +
       '<div class="btns"><button type="button" class="btn primary" data-act="doEdit" data-id="' + id + '">Save change</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div></li>';
@@ -997,16 +1008,28 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(function (d) {
         var pc = state.requests.filter(function (r) { return r.status === 'pending' && r.date === d; }).length;
         var wins = windowsFor(d).filter(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
-        var body = wins.map(function (w) {
-          var rowsHtml = sessionsIn(d, w).map(function (r) {
-            return '<li><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span>' + esc(r.name) + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button>') + '</span></li>' + (r.standing ? '' : editLi(r));
-          }).join('') + state.standing.filter(function (x) {
+        var entries = [], empty = [];
+        wins.forEach(function (w) {
+          var cls = w.id === 'home' ? 'home' : 'other';
+          var chip = '<span class="chip ' + cls + '">' + esc(w.loc) + '</span>';
+          var n = 0;
+          sessionsIn(d, w).forEach(function (r) {
+            n++;
+            entries.push({ m: toMin(r.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span>' + chip + '</div>' +
+              '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button>') + '</div>' +
+              (r.standing ? '' : editLi(r)) + '</li>' });
+          });
+          state.standing.filter(function (x) {
             return x.wid === w.id && x.dow === parseISO(d).getDay() && state.skips[x.id + '|' + d];
-          }).map(function (x) {
-            return '<li><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span><span>' + esc(x.name) + ' <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></span></li>';
-          }).join('');
-          return '<div><p class="loc">' + esc(w.loc) + (w.cap > 1 ? ', ' + capText(w) : '') + '</p><ul class="items">' + (rowsHtml || '<li class="muted">No sessions</li>') + '</ul></div>';
-        }).join('');
+          }).forEach(function (x) {
+            n++;
+            entries.push({ m: toMin(x.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span>' + chip + '</div>' +
+              '<div class="sbody"><span class="nm">' + esc(x.name) + '</span> <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></div></li>' });
+          });
+          if (!n) empty.push('<li class="muted sempty"><span class="chip ' + cls + '">' + esc(w.loc) + '</span> no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
+        });
+        entries.sort(function (a, b) { return a.m - b.m; });
+        var body = (entries.length || empty.length) ? '<ul class="items sched">' + entries.map(function (e) { return e.html; }).join('') + empty.join('') + '</ul>' : '';
         var closed = state.blocks.filter(function (b) { return b.date === d; }).map(function (b) {
           return '<li><span class="t">' + (b.whole ? 'Whole day' : b.from + ' to ' + b.to) + '</span><span>Closed' + (b.note ? ' (' + esc(b.note) + ')' : '') + ' <button type="button" class="link" data-act="removeBlock" data-id="' + b.id + '">Reopen</button></span></li>';
         }).join('');
