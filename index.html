@@ -660,7 +660,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var mine = state.requests.filter(function (r) { return state.me.phone && samePhone(r.phone, state.me.phone); })
       .sort(function (a, b) { return b.created - a.created; }).slice(0, 8);
     var h = '';
-    if (ui.sent) h += ui.sentKind === 'accepted' ? '<div class="banner ok">You are booked. See you then!</div>' : '<div class="banner ok">Request sent. Michela will answer here and may message you on WhatsApp.</div>';
+    if (ui.sent) h += ui.sentKind === 'accepted' ? '<div class="banner ok">You are booked. See you then!</div>' : '<div class="banner ok">Request sent. Michela will answer here. Come back to check.</div>';
     if (!mine.length) return h + '<div class="card"><p>Nothing yet. Pick a time on the Free times tab.</p></div>';
     return h + mine.map(reqCardClient).join('');
   }
@@ -729,8 +729,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var d = ui.draft;
     return '<section class="card youbar"><span class="lbl">You <span class="opt">(remembered on this phone)</span></span><div class="row2">' +
       '<div class="field"><label for="f-name">Name</label><input id="f-name" data-scope="draft" data-field="name" autocomplete="name" value="' + esc(d.name) + '"></div>' +
-      '<div class="field"><label for="f-phone">WhatsApp number</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
-      '<p class="muted">Michela will contact you on WhatsApp.</p></section>';
+      '<div class="field"><label for="f-phone">Phone</label><input id="f-phone" type="tel" inputmode="tel" data-scope="draft" data-field="phone" data-rerender autocomplete="tel" value="' + esc(d.phone) + '"></div></div>' +
+      '</section>';
   }
   function xName() { return state.rules.length === 1 ? state.rules[0].studio : 'Other studios'; }
   function bottomNav(items) {
