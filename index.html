@@ -350,7 +350,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
   var ui;
   function newDraft() {
-    return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: state.me.dur || 60, note: '', err: '' };
+    return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: usualDur(state.me.name), note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, err: '' }; }
@@ -671,6 +671,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return clientViewClassic();
   }
   /* ---------- shared pieces for the D and E previews ---------- */
+  function usualDur(name) { return /kentaro/i.test(String(name || '')) ? 120 : 90; }
   function clampDur(m) { return Math.max(60, Math.min(180, m)); }
   function lenStepper(d) {
     return '<div class="stepper"><button type="button" class="stp" data-act="durStep" data-v="-15" aria-label="Shorter"' + (d.dur <= 60 ? ' disabled' : '') + '>-</button>' +
@@ -1165,6 +1166,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     durStep: function (id, v) {
       var d = ui.draft;
       d.dur = clampDur(d.dur + Number(v));
+      d.durTouched = true;
       if (d.auto) { d.start = ''; defaultStart(); }
       render();
     },
@@ -1399,6 +1401,12 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     if (!obj) return;
     var f = t.dataset.field;
     var val = t.type === 'checkbox' ? t.checked : t.value;
+    if (sc === 'draft' && f === 'name' && !obj.durTouched) {
+      obj.dur = usualDur(val);
+      obj.name = val;
+      if (e.type === 'change') { if (obj.auto) { obj.start = ''; } render(); }
+      return;
+    }
     if (sc === 'draft' && f === 'day') {
       obj.date = val; obj.wid = ''; obj.start = ''; obj.auto = true;
       if (e.type === 'change') render();
