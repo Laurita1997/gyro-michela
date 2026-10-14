@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Studio Sign Up</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gyro">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..700&family=Figtree:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap">
@@ -1133,6 +1138,51 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
 
   function sure(q) { try { return typeof window.confirm === 'function' ? window.confirm(q) : true; } catch (e) { return true; } }
+  /* ---------- Push notifications (Michela only) ---------- */
+  var VAPID_PUB = 'BN-K8pINT4RSpBrI6FKT3N_buaBlpoA548D8KdrYMHUhbKGDaBha0LLZdid5qhptX_VdHT3JsUYdIfLdPC-8VSA';
+  function b64ToBytes(b) {
+    var p = '='.repeat((4 - b.length % 4) % 4), r = (b + p).replace(/-/g, '+').replace(/_/g, '/'), raw = atob(r), out = new Uint8Array(raw.length), i;
+    for (i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function pushKind() {
+    try {
+      var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      var standalone = !!(navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches));
+      if (ios && !standalone) return 'install';
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return 'unsupported';
+      if (Notification.permission === 'denied') return 'denied';
+    } catch (e) { return 'unsupported'; }
+    return 'ok';
+  }
+  function checkPush() {
+    var k = pushKind();
+    if (k !== 'ok') { ui.push = k; render(); return; }
+    navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) { return reg.pushManager.getSubscription(); })
+      .then(function (sub) { ui.push = sub ? 'on' : 'off'; render(); })
+      .catch(function () { ui.push = 'unsupported'; render(); });
+  }
+  function notifyCard() {
+    var k = ui.push || 'unknown', body;
+    if (k === 'on') {
+      body = '<p class="muted">Notifications are on for this phone. You get one when a new request or booking comes in, and when someone cancels.</p>' +
+        '<div class="btns"><button type="button" class="btn secondary" data-act="testPush">Send a test</button><button type="button" class="btn ghost" data-act="disablePush">Turn off</button></div>';
+    } else if (k === 'install') {
+      body = '<p class="muted">On an iPhone, first add this page to your home screen: tap the Share button, then Add to Home Screen. Open Gyro from the new icon and come back to this page. Then you can turn notifications on.</p>';
+    } else if (k === 'denied') {
+      body = '<p class="muted">Notifications are blocked for this page. Allow them in your phone settings, then come back here.</p>';
+    } else if (k === 'unsupported') {
+      body = '<p class="muted">This browser cannot show notifications.</p>';
+    } else if (k === 'unknown') {
+      body = '<p class="muted">Checking...</p>';
+    } else {
+      body = '<p class="muted">Get a notification on this phone when a new request or booking comes in, and when someone cancels.</p>' +
+        '<div class="btns"><button type="button" class="btn primary" data-act="enablePush">Turn on notifications</button></div>';
+    }
+    return '<section class="card"><h2>Notifications</h2>' + body + (ui.pushErr ? '<p class="err">' + esc(ui.pushErr) + '</p>' : '') + '</section>';
+  }
+
   function waLink(phone, text) {
     var n = digits(phone);
     if (String(phone).replace(/\s/g, '').indexOf('00') === 0) n = n.replace(/^00/, '');
@@ -1155,10 +1205,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
     if (ui.mtab === 'schedule') return tabs + tellBar() + scheduleM();
     if (ui.mtab === 'setup') {
-      return tabs + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
+      return tabs + notifyCard() + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
-    return tabs + tellBar() + requestsM();
+    return tabs + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
   }
 
   /* ---------- render ---------- */
@@ -1208,7 +1258,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         state.code = c; state.unlocked = true; applyData(j.data);
         try { sessionStorage.setItem(CODE_KEY, c); } catch (e) { /* ignore */ }
         ui.view = 'michela'; ui.codeOpen = false; ui.code = { val: '', err: '' };
-        render(); window.scrollTo(0, 0); toast('Welcome, Michela');
+        render(); window.scrollTo(0, 0); toast('Welcome, Michela'); checkPush();
       }).catch(function (e) {
         ui.code = { val: '', err: e.message }; render();
       });
@@ -1342,6 +1392,29 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     removeLen: function (id) {
       state.lengths = (state.lengths || []).filter(function (x) { return x.id !== id; });
       save(); render(); toast('Removed');
+    },
+    enablePush: function () {
+      ui.pushErr = '';
+      Notification.requestPermission().then(function (perm) {
+        if (perm !== 'granted') { ui.push = perm === 'denied' ? 'denied' : 'off'; render(); return; }
+        return navigator.serviceWorker.register('/sw.js').then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+          return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUB) });
+        }).then(function (sub) {
+          return api({ action: 'push_subscribe', code: state.code, sub: sub.toJSON() });
+        }).then(function () { ui.push = 'on'; render(); toast('Notifications on'); });
+      }).catch(function (e) { ui.pushErr = (e && e.message) || 'Could not turn on notifications.'; render(); });
+    },
+    disablePush: function () {
+      navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+        if (!sub) return;
+        var ep = sub.endpoint;
+        return sub.unsubscribe().then(function () { return api({ action: 'push_unsubscribe', code: state.code, endpoint: ep }); });
+      }).then(function () { ui.push = 'off'; render(); toast('Notifications off'); })
+        .catch(function (e) { ui.pushErr = (e && e.message) || 'Could not turn off.'; render(); });
+    },
+    testPush: function () {
+      api({ action: 'push_test', code: state.code }).then(function () { toast('Test sent'); })
+        .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
     dismissTell: function () { ui.tell = null; render(); },
     closePanel: function (id) { delete ui.panels[id]; render(); },
@@ -1562,7 +1635,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   try { savedCode = sessionStorage.getItem(CODE_KEY) || ''; } catch (e) { /* ignore */ }
   if (savedCode) {
     api({ action: 'login', code: savedCode }).then(function (j) {
-      state.code = savedCode; state.unlocked = true; applyData(j.data); render();
+      state.code = savedCode; state.unlocked = true; applyData(j.data); render(); checkPush();
     }).catch(function () { try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ } return refresh(); });
   } else refresh();
   setInterval(function () { if (state.loaded && !document.hidden) refresh(true); }, 30000);

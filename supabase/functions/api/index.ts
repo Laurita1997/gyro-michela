@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const CORS = {
@@ -107,6 +108,28 @@ function homeConflict(d: any, date: string, start: string, dur: number): string 
   return "";
 }
 
+const DAYN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmtD = (s: string) => { const d = new Date(s + "T12:00:00Z"); return DAYN[d.getUTCDay()] + " " + d.getUTCDate() + " " + MON[d.getUTCMonth()]; };
+
+// sends a push notification to every phone Michela turned notifications on for
+async function notifyMichela(title: string, body: string, tag?: string) {
+  try {
+    const { data: k } = await sb.from("push_keys").select("*").eq("id", 1).single();
+    const { data: subs } = await sb.from("push_subs").select("*");
+    if (!k || !subs || !subs.length) return;
+    webpush.setVapidDetails("https://gyro-michela.vercel.app", k.pub, k.priv);
+    const payload = JSON.stringify({ title, body, tag, url: "/" });
+    await Promise.allSettled(subs.map(async (s: any) => {
+      try {
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400 });
+      } catch (e: any) {
+        if (e && (e.statusCode === 404 || e.statusCode === 410)) await sb.from("push_subs").delete().eq("endpoint", s.endpoint);
+      }
+    }));
+  } catch (_e) { /* notifications are best effort */ }
+}
+
 function todayISO() {
   return new Date(Date.now() - 24 * 3600e3).toISOString().slice(0, 10);
 }
@@ -175,6 +198,8 @@ Deno.serve(async (req: Request) => {
         return { data: d };
       });
       if (res.abort) return fail(res.err);
+      const when = fmtD(created.fdate || created.date) + ", " + (created.start || created.reqStart);
+      await notifyMichela(created.status === "accepted" ? "New booking" : "New request", name + ", " + when + (created.loc && created.loc !== "Michela's studio" ? " (" + created.loc + ")" : ""), "req");
       return json({ ok: true, id: created.id, status: created.status });
     }
 
@@ -205,6 +230,29 @@ Deno.serve(async (req: Request) => {
         return { data: d };
       });
       if (res.abort) return fail(res.err);
+      if (action === "cancel") {
+        const row2 = await readRow();
+        const r2 = (row2.data.requests || []).find((x: any) => x.id === b.id);
+        if (r2) await notifyMichela(r2.late ? "Late cancellation" : "Cancellation", r2.name + ", " + fmtD(r2.fdate || r2.date) + ", " + (r2.start || r2.reqStart), "cancel");
+      }
+      return json({ ok: true });
+    }
+
+    if (action === "push_subscribe" || action === "push_unsubscribe" || action === "push_test") {
+      const c = await checkCode(String(b.code || ""));
+      if (!c.ok) return fail(c.msg!, 401);
+      if (action === "push_subscribe") {
+        const s = b.sub || {};
+        if (!s.endpoint || !s.keys || !s.keys.p256dh || !s.keys.auth) return fail("Bad subscription.");
+        const { error } = await sb.from("push_subs").upsert({ endpoint: String(s.endpoint), p256dh: String(s.keys.p256dh), auth: String(s.keys.auth) });
+        if (error) return fail(error.message, 500);
+        return json({ ok: true });
+      }
+      if (action === "push_unsubscribe") {
+        await sb.from("push_subs").delete().eq("endpoint", String(b.endpoint || ""));
+        return json({ ok: true });
+      }
+      await notifyMichela("Test", "Notifications work on this phone.", "test");
       return json({ ok: true });
     }
 
