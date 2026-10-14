@@ -557,17 +557,32 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
 
   /* ---------- client view ---------- */
+  function hoursUntil(r) {
+    var nowV = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vienna' }));
+    var p = sessionDate(r).split('-').map(Number), t = String(r.start).split(':').map(Number);
+    return (new Date(p[0], p[1] - 1, p[2], t[0], t[1]).getTime() - nowV.getTime()) / 3600000;
+  }
+  function cancelBlock(r, label) {
+    if (ui.cancelAsk !== r.id) return '<button type="button" class="btn secondary" data-act="askCancel" data-id="' + r.id + '">' + label + '</button>';
+    if (r.status === 'accepted' && hoursUntil(r) < 24) {
+      return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. Please contact Michela directly to cancel it.</p>' +
+        '<button type="button" class="btn secondary" data-act="keepCancel">OK</button></div>';
+    }
+    return '<div class="cancelask"><p class="line">' + (r.status === 'accepted' ? 'Cancel this session?' : 'Cancel this request?') + '</p>' +
+      '<div class="btns"><button type="button" class="btn primary" data-act="cancel" data-id="' + r.id + '">Yes, cancel</button>' +
+      '<button type="button" class="btn secondary" data-act="keepCancel">Keep it</button></div></div>';
+  }
   function reqCardClient(r) {
     var status = '', body = '', actions = '';
     var where = function (loc) { return '<p class="muted">' + esc(loc) + '</p>'; };
     if (r.status === 'pending') {
       status = pill('pending', 'Waiting for Michela');
       body = '<p class="line">' + esc(wantLine(r)) + '</p>' + where(locOfReq(r)) + (winPick(r.date, widOf(r)).open ? '' : '<p class="muted">Michela will check with the studio.</p>');
-      actions = '<button type="button" class="btn secondary" data-act="cancel" data-id="' + r.id + '">Cancel request</button>';
+      actions = cancelBlock(r, 'Cancel request');
     } else if (r.status === 'accepted') {
       status = pill('ok', 'Confirmed');
       body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
-      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a><button type="button" class="btn secondary" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
+      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a>' + cancelBlock(r, 'Cancel session');
     } else if (r.status === 'proposed') {
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
@@ -1107,6 +1122,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<div class="btns"><button type="button" class="btn primary" data-act="savePin">Save code</button></div></section>';
   }
 
+  function sure(q) { try { return typeof window.confirm === 'function' ? window.confirm(q) : true; } catch (e) { return true; } }
   function waLink(phone, text) {
     var n = digits(phone);
     if (String(phone).replace(/\s/g, '').indexOf('00') === 0) n = n.replace(/^00/, '');
@@ -1264,10 +1280,16 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         ui.busy = false; d.err = e.message; render();
       });
     },
-    cancel: function (id) { var r = find(id); A._own('cancel', id, r && r.status === 'accepted' ? 'Session cancelled' : 'Request cancelled'); },
+    askCancel: function (id) { ui.cancelAsk = id; render(); },
+    keepCancel: function () { ui.cancelAsk = null; render(); },
+    cancel: function (id) {
+      ui.cancelAsk = null;
+      var rr = find(id);
+      if (rr && rr.status === 'accepted' && hoursUntil(rr) < 24) { render(); return; } var r = find(id); A._own('cancel', id, r && r.status === 'accepted' ? 'Session cancelled' : 'Request cancelled'); },
     cancelSess: function (id) {
       var r = find(id);
       if (!r) return;
+      if (!sure('Cancel this session for ' + first(r.name) + '?')) return;
       r.status = 'cancelled'; r.upd = Date.now();
       save(); render(); toast('Session cancelled');
     },
