@@ -650,7 +650,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       (reg ? '<p class="muted">As a regular client you can also pick studio days that are not listed.</p>' : '') + '</div>' +
       whereHtml + (hint ? '<div class="field">' + hint + '</div>' : '') + (win ? '<p class="muted">' + (direct ? 'You are booked straight away. No reply needed.' : 'This one is a request. Michela confirms it.') + '</p>' : '') +
       '<div class="field"><label for="f-start">Start time</label><input id="f-start" type="time" step="900" data-scope="draft" data-field="start" data-rerender value="' + esc(d.start) + '"></div>' +
-      '<div class="field"><span class="lbl">How long do you usually take?</span>' + lenStepper(d) + ends + '</div>' +
+      '<div class="field"><span class="lbl">Session length</span>' + lenStepper(d) + ends + '</div>' +
       '<div class="field"><label for="f-note">Note for Michela <span class="opt">(optional, for example if you could come earlier or later)</span></label><textarea id="f-note" data-scope="draft" data-field="note" placeholder="I can also come up to an hour earlier or later">' + esc(d.note) + '</textarea></div>' +
       (d.err ? '<p class="err">' + esc(d.err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary" data-act="submit">' + (direct ? 'Book now' : 'Send request') + '</button></div></section>';
@@ -674,9 +674,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function usualDur(name) { return /kentaro/i.test(String(name || '')) ? 120 : 90; }
   function clampDur(m) { return Math.max(60, Math.min(180, m)); }
   function lenStepper(d) {
-    return '<div class="stepper"><button type="button" class="stp" data-act="durStep" data-v="-15" aria-label="Shorter"' + (d.dur <= 60 ? ' disabled' : '') + '>-</button>' +
-      '<div class="stv"><b>' + fmtDur(d.dur) + '</b><small>' + (d.start ? 'Ends at ' + fromMin(toMin(d.start) + d.dur) : 'Pick a start time') + '</small></div>' +
-      '<button type="button" class="stp" data-act="durStep" data-v="15" aria-label="Longer"' + (d.dur >= 180 ? ' disabled' : '') + '>+</button></div>';
+    return '<div class="stepper"><div class="stv" style="flex:1"><b>' + fmtDur(d.dur) + '</b><small>' + (d.start ? 'Ends at ' + fromMin(toMin(d.start) + d.dur) : 'Pick a start time') + '</small></div></div>';
   }
   function okStart(date, win, dur, m, strict) {
     if (m < toMin(win.from) || m + dur > toMin(win.to)) return false;
