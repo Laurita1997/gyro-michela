@@ -563,11 +563,11 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     if (r.status === 'pending') {
       status = pill('pending', 'Waiting for Michela');
       body = '<p class="line">' + esc(wantLine(r)) + '</p>' + where(locOfReq(r)) + (winPick(r.date, widOf(r)).open ? '' : '<p class="muted">Michela will check with the studio.</p>');
-      actions = '<button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel request</button>';
+      actions = '<button type="button" class="btn secondary" data-act="cancel" data-id="' + r.id + '">Cancel request</button>';
     } else if (r.status === 'accepted') {
       status = pill('ok', 'Confirmed');
       body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
-      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a><button type="button" class="btn ghost" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
+      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a><button type="button" class="btn secondary" data-act="cancel" data-id="' + r.id + '">Cancel session</button>';
     } else if (r.status === 'proposed') {
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
