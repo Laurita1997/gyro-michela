@@ -296,7 +296,9 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   var snap = {};
   function syncSnap() { snap = {}; state.requests.forEach(function (r) { snap[r.id] = JSON.stringify(r); }); }
   function applyData(d) {
-    ['rules', 'open', 'standing', 'skips', 'blocks', 'requests'].forEach(function (k) { if (d[k] !== undefined) state[k] = d[k]; });
+    ['rules', 'open', 'standing', 'skips', 'blocks', 'requests', 'lengths'].forEach(function (k) { if (d[k] !== undefined) state[k] = d[k]; });
+    if (d.usualDur !== undefined) state.usualDur = d.usualDur;
+    if (typeof ui === 'object' && ui && ui.draft) ui.draft.dur = usualDur(ui.draft.name, ui.draft.phone);
     if (d.regularFor !== undefined) state.regularFor = d.regularFor;
     state.loaded = true; state.loadErr = '';
     syncSnap();
@@ -316,7 +318,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function push() {
     saving = true;
     var nc = pendingCode; pendingCode = null;
-    var body = { action: 'save', code: state.code, data: { rules: state.rules, open: state.open, standing: state.standing, skips: state.skips, blocks: state.blocks, requests: state.requests } };
+    var body = { action: 'save', code: state.code, data: { rules: state.rules, open: state.open, standing: state.standing, skips: state.skips, blocks: state.blocks, requests: state.requests, lengths: state.lengths } };
     if (nc) body.new_code = nc;
     api(body).then(function (j) {
       if (nc) { state.code = nc; try { sessionStorage.setItem(CODE_KEY, nc); } catch (e) { /* ignore */ } toast('Code changed'); }
@@ -334,10 +336,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return p.then(function (j) {
       if (saving) return;
       var d = state.unlocked ? j.data : j;
-      var before = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor]);
+      var before = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor, state.lengths, state.usualDur]);
       var wasLoaded = state.loaded;
       applyData(d);
-      var after = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor]);
+      var after = JSON.stringify([state.rules, state.open, state.standing, state.skips, state.blocks, state.requests, state.regularFor, state.lengths, state.usualDur]);
       var ae = document.activeElement;
       var typing = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
       if (!wasLoaded || before !== after || !quiet) { if (!(quiet && typing)) render(); }
@@ -347,17 +349,17 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     });
   }
 
-  var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], regularFor: '', loaded: false, loadErr: '' };
+  var state = { me: loadMe(), code: '', unlocked: false, rules: [], open: {}, standing: [], skips: {}, requests: [], blocks: [], lengths: [], usualDur: 0, regularFor: '', loaded: false, loadErr: '' };
   var ui;
   function newDraft() {
-    return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: usualDur(state.me.name), note: '', err: '' };
+    return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: usualDur(state.me.name, state.me.phone), note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
   function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, err: '' }; }
   function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
   function resetUi(view) {
     ui = { month: monthKey(tomorrow()), view: view, ctab: VARIANT === 'd' ? 'home' : VARIANT === 'e' ? 'cal' : 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
-    ui.draft = newDraft(); ui.block = newBlock(); ui.rule = newRule(); ui.stand = newStand();
+    ui.draft = newDraft(); ui.block = newBlock(); ui.rule = newRule(); ui.stand = newStand(); ui.len = { name: '', phone: '', dur: 120, err: '' };
   }
 
   var app = document.getElementById('app');
@@ -671,7 +673,12 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return clientViewClassic();
   }
   /* ---------- shared pieces for the D and E previews ---------- */
-  function usualDur(name) { return /kentaro/i.test(String(name || '')) ? 120 : 90; }
+  function usualDur(name, phone) {
+    var hit = (state.lengths || []).filter(function (x) { return samePhone(x.phone, phone); })[0];
+    if (hit) return hit.dur;
+    if (state.usualDur && digits(phone) && samePhone(phone, state.me.phone)) return state.usualDur;
+    return /kentaro/i.test(String(name || '')) ? 120 : 90;
+  }
   function clampDur(m) { return Math.max(60, Math.min(180, m)); }
   function lenStepper(d) {
     return '<div class="stepper"><div class="stv" style="flex:1"><b>' + fmtDur(d.dur) + '</b><small>' + (d.start ? 'Ends at ' + fromMin(toMin(d.start) + d.dur) : 'Pick a start time') + '</small></div></div>';
@@ -1080,6 +1087,18 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       (c.err ? '<p class="err">' + esc(c.err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary" data-act="unlock">Unlock</button><button type="button" class="btn ghost" data-act="closeCode">Cancel</button></div></section>';
   }
+  function lengthsCard() {
+    var l = ui.len, list = state.lengths || [], data = ' data-scope="len"';
+    return '<section class="card"><h2>Usual lengths</h2><p class="muted">Everyone gets 1h30. Add a phone number here for a person who always gets a different length, like Kentaro.</p>' +
+      (list.length ? '<ul class="items">' + list.map(function (x) {
+        return '<li><span class="t">' + esc(x.name || 'No name') + '</span><span>' + esc(x.phone) + ', ' + esc(fmtDur(x.dur)) + ' <button type="button" class="link" data-act="removeLen" data-id="' + x.id + '">Remove</button></span></li>';
+      }).join('') + '</ul>' : '') +
+      '<div class="row2"><div class="field"><label for="l-name">Name</label><input id="l-name"' + data + ' data-field="name" value="' + esc(l.name) + '"></div>' +
+      '<div class="field"><label for="l-phone">Phone</label><input id="l-phone" type="tel" inputmode="tel"' + data + ' data-field="phone" value="' + esc(l.phone) + '"></div></div>' +
+      '<div class="field"><label for="l-dur">Length</label><select id="l-dur"' + data + ' data-field="dur">' + durOptions(l.dur) + '</select></div>' +
+      (l.err ? '<p class="err">' + esc(l.err) + '</p>' : '') +
+      '<div class="btns"><button type="button" class="btn primary" data-act="addLen">Save length</button></div></section>';
+  }
   function pinCard() {
     var p = ui.pin;
     return '<section class="card"><h2>Your code</h2><p class="muted">The code that opens this view. Use 4 to 8 digits.</p>' +
@@ -1096,7 +1115,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
     if (ui.mtab === 'schedule') return tabs + scheduleM();
     if (ui.mtab === 'setup') {
-      return tabs + studioCard() + standCard() + blockForm() + pinCard() +
+      return tabs + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
     return tabs + requestsM();
@@ -1155,7 +1174,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       });
     },
     lock: function () {
-      state.unlocked = false; state.code = ''; state.requests = []; state.standing = []; state.blocks = []; state.skips = {};
+      state.unlocked = false; state.code = ''; state.requests = []; state.standing = []; state.blocks = []; state.skips = {}; state.lengths = [];
       try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ }
       ui.view = 'client'; ui.ctab = 'free'; ui.codeOpen = false;
       render(); window.scrollTo(0, 0); toast('Locked');
@@ -1264,6 +1283,18 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (p.msg.trim()) r.reply = p.msg.trim();
       r.upd = Date.now();
       delete ui.panels[id]; save(); render(); toast('Changed. ' + first(r.name) + ' sees the new time');
+    },
+    addLen: function () {
+      var l = ui.len;
+      if (digits(l.phone).length < 7) { l.err = 'Add the phone number.'; render(); return; }
+      state.lengths = (state.lengths || []).filter(function (x) { return !samePhone(x.phone, l.phone); });
+      state.lengths.push({ id: 'l' + Date.now(), name: l.name.trim(), phone: l.phone.trim(), dur: l.dur });
+      ui.len = { name: '', phone: '', dur: 120, err: '' };
+      save(); render(); toast('Saved');
+    },
+    removeLen: function (id) {
+      state.lengths = (state.lengths || []).filter(function (x) { return x.id !== id; });
+      save(); render(); toast('Removed');
     },
     closePanel: function (id) { delete ui.panels[id]; render(); },
     doAccept: function (id) {
@@ -1425,13 +1456,13 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var t = e.target;
     var sc = t.dataset && t.dataset.scope;
     if (!sc) return;
-    var obj = sc === 'draft' ? ui.draft : sc === 'block' ? ui.block : sc === 'rule' ? ui.rule : sc === 'stand' ? ui.stand : sc === 'code' ? ui.code : sc === 'pin' ? ui.pin : sc === 'ui' ? ui : ui.panels[t.dataset.id];
+    var obj = sc === 'draft' ? ui.draft : sc === 'block' ? ui.block : sc === 'rule' ? ui.rule : sc === 'stand' ? ui.stand : sc === 'code' ? ui.code : sc === 'pin' ? ui.pin : sc === 'len' ? ui.len : sc === 'ui' ? ui : ui.panels[t.dataset.id];
     if (!obj) return;
     var f = t.dataset.field;
     var val = t.type === 'checkbox' ? t.checked : t.value;
-    if (sc === 'draft' && f === 'name' && !obj.durTouched) {
-      obj.dur = usualDur(val);
+    if (sc === 'draft' && f === 'name') {
       obj.name = val;
+      obj.dur = usualDur(val, obj.phone);
       if (e.type === 'change') { if (obj.auto) { obj.start = ''; } render(); }
       return;
     }
@@ -1461,6 +1492,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     obj[f] = val;
     if (sc === 'stand' && f === 'wid') obj.dow = daysFor(val)[0];
     if (sc === 'draft' && f === 'start') obj.auto = false;
+    if (sc === 'draft' && f === 'phone') obj.dur = usualDur(obj.name, val);
     if (e.type === 'change' && sc === 'draft' && f === 'phone' && !state.unlocked) {
       var ph = String(val);
       api({ action: 'public', phone: ph }).then(function (j) { applyData(j); render(); }).catch(function () { /* ignore */ });

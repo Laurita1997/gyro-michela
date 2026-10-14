@@ -60,6 +60,7 @@ function publicView(d: any, phone: string) {
     requests: (d.requests || []).filter((r: any) => r.status !== "cancelled" || own(r)).map((r: any) =>
       own(r) ? r : { id: r.id, status: r.status, date: r.date, fdate: r.fdate, wid: r.wid, start: r.start, fdur: r.fdur, name: "", phone: "" }),
     regularFor: knownClient(d, phone) ? phone : "",
+    usualDur: ((d.lengths || []).find((x: any) => samePhone(x.phone, phone)) || {}).dur || 0,
   };
 }
 
@@ -130,9 +131,14 @@ Deno.serve(async (req: Request) => {
       if (!isDate(r.date) || r.date < todayISO()) return fail("Pick a day.");
       if (!isTime(r.reqStart)) return fail("Pick a start time.");
       if (!DUR.includes(Number(r.dur))) return fail("Pick a length.");
+      const usual = (d0: any) => {
+        const hit = (d0.lengths || []).find((x: any) => samePhone(x.phone, phone));
+        return hit ? Number(hit.dur) : /kentaro/i.test(name) ? 120 : 90;
+      };
       let created: any = null;
       const res = await mutate((row) => {
         const d = row.data;
+        r.dur = usual(d);
         const wid = r.wid || "home";
         let loc = "Michela's studio";
         let direct = false;
@@ -225,6 +231,7 @@ Deno.serve(async (req: Request) => {
           standing: Array.isArray(p.standing) ? p.standing : cur.standing,
           skips: p.skips && typeof p.skips === "object" ? p.skips : cur.skips,
           blocks: Array.isArray(p.blocks) ? p.blocks : cur.blocks,
+          lengths: Array.isArray(p.lengths) ? p.lengths : (cur.lengths || []),
           requests: Object.values(byId),
         };
         return { data, code_hash: newHash };
