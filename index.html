@@ -1196,7 +1196,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var t = ui.tell;
     if (!t) return '';
     return '<section class="card tellbar"><h2>Tell ' + esc(t.name) + '</h2><p class="muted">They only see it when they open the page. A message makes sure they know.</p>' +
-      '<div class="btns"><a class="btn primary" href="' + esc(waLink(t.phone, t.text)) + '" target="_blank" rel="noopener">Message on WhatsApp</a>' +
+      '<div class="btns"><a class="btn primary" href="' + esc(waLink(t.phone, t.text)) + '" target="_blank" rel="noopener" data-act="sentTell">Message on WhatsApp</a>' +
       '<button type="button" class="btn ghost" data-act="dismissTell">Not now</button></div></section>';
   }
   function michelaView() {
@@ -1419,6 +1419,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
     dismissTell: function () { ui.tell = null; render(); },
+    sentTell: function () { setTimeout(function () { ui.tell = null; render(); }, 400); },
     propYes: function (id) {
       var r = find(id), p = r && r.proposal; if (!p) return;
       r.status = 'accepted'; r.fdate = p.date; r.start = p.start; r.fdur = p.dur; r.wid = p.wid || 'home'; r.loc = p.loc || "Michela's studio";
