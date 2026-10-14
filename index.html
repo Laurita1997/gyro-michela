@@ -593,7 +593,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
       body = '<p class="line">' + esc(sessLine(p.date, p.start, p.dur)) + '</p>' + where(p.loc || HOME.loc) + (p.msg ? '<p class="quote">' + esc(p.msg) + '</p>' : '') + '<p class="muted">You asked for: ' + esc(wantLine(r)) + '</p>';
-      actions = '<button type="button" class="btn primary" data-act="acceptProposal" data-id="' + r.id + '">Accept this time</button><button type="button" class="btn ghost" data-act="declineProposal" data-id="' + r.id + '">No thanks</button>';
+      body += '<p class="muted">Michela sent you this on WhatsApp. Please answer her there.</p>';
     } else if (r.status === 'declined') {
       status = pill('bad', 'Not possible');
       body = '<p class="line">' + esc(wantLine(r)) + '</p>' + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '<p class="muted">Michela cannot do this one. You can send a new request for another day.</p>');
@@ -960,8 +960,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var waiting = state.requests.filter(function (r) { return r.status === 'proposed'; });
     var h = pending.length ? pending.map(reqCardM).join('') : '<div class="card"><p>Nothing waiting. New requests show up here, oldest first.</p></div>';
     if (waiting.length) {
-      h += '<section class="card"><h2>Waiting for a client to answer</h2><ul class="items">' + waiting.map(function (r) {
-        return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span></li>';
+      h += '<section class="card"><h2>Waiting for an answer on WhatsApp</h2><ul class="items">' + waiting.map(function (r) {
+        return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span>' +
+          '<span class="btns"><button type="button" class="btn primary" data-act="propYes" data-id="' + r.id + '">They said yes</button>' +
+          '<button type="button" class="btn secondary" data-act="propNo" data-id="' + r.id + '">They said no</button></span></li>';
       }).join('') + '</ul></section>';
     }
     var weekAgo = Date.now() - 14 * 24 * 3600 * 1000;
@@ -1417,6 +1419,15 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
     dismissTell: function () { ui.tell = null; render(); },
+    propYes: function (id) {
+      var r = find(id), p = r && r.proposal; if (!p) return;
+      r.status = 'accepted'; r.fdate = p.date; r.start = p.start; r.fdur = p.dur; r.wid = p.wid || 'home'; r.loc = p.loc || "Michela's studio";
+      save(); render(); toast('Session confirmed');
+    },
+    propNo: function (id) {
+      var r = find(id); if (!r) return;
+      r.status = 'declined'; r.reply = ''; save(); render(); toast('Closed');
+    },
     closePanel: function (id) { delete ui.panels[id]; render(); },
     doAccept: function (id) {
       var r = find(id), p = ui.panels[id];
@@ -1430,7 +1441,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (!p.start) { toast('Add a start time first'); return; }
       var w = winPick(p.date, widOf(r));
       r.status = 'proposed'; r.proposal = { date: p.date, start: p.start, dur: p.dur, msg: p.msg.trim(), wid: w.id, loc: w.loc };
-      tell(r, 'Hi ' + first(r.name) + ', that time does not work for me. Would ' + sessLine(p.date, p.start, p.dur).replace(/ \(.*\)$/, '') + ' work for you? You can answer on ' + location.origin.replace(/^https?:\/\//, '') + (p.msg.trim() ? ' ' + p.msg.trim() : ''));
+      tell(r, 'Hi ' + first(r.name) + ', that time does not work for me. Would ' + sessLine(p.date, p.start, p.dur).replace(/ \(.*\)$/, '') + ' work for you? Just let me know here.' + (p.msg.trim() ? ' ' + p.msg.trim() : ''));
       delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Suggestion saved');
     },
     doDecline: function (id) {
