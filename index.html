@@ -337,7 +337,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var body = { action: 'save', code: state.code, data: { rules: state.rules, open: state.open, standing: state.standing, skips: state.skips, blocks: state.blocks, requests: state.requests, lengths: state.lengths } };
     if (nc) body.new_code = nc;
     api(body).then(function (j) {
-      if (nc) { state.code = nc; try { sessionStorage.setItem(CODE_KEY, nc); } catch (e) { /* ignore */ } toast('Code changed'); }
+      if (nc) { state.code = nc; try { localStorage.setItem(CODE_KEY, nc); } catch (e) { /* ignore */ } toast('Code changed'); }
       saving = false;
       if (again) { again = false; stamp(); push(); return; }
       applyData(j.data); render();
@@ -1283,7 +1283,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (!c) { ui.code = { val: '', err: 'Enter your code.' }; render(); return; }
       api({ action: 'login', code: c }).then(function (j) {
         state.code = c; state.unlocked = true; applyData(j.data);
-        try { sessionStorage.setItem(CODE_KEY, c); } catch (e) { /* ignore */ }
+        try { localStorage.setItem(CODE_KEY, c); } catch (e) { /* ignore */ }
         ui.view = 'michela'; ui.codeOpen = false; ui.code = { val: '', err: '' };
         render(); window.scrollTo(0, 0); toast('Welcome, Michela'); checkPush();
       }).catch(function (e) {
@@ -1292,7 +1292,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     },
     lock: function () {
       state.unlocked = false; state.code = ''; state.requests = []; state.standing = []; state.blocks = []; state.skips = {}; state.lengths = [];
-      try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ }
+      try { localStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ }
       ui.view = 'client'; ui.ctab = 'free'; ui.codeOpen = false;
       render(); window.scrollTo(0, 0); toast('Locked');
       refresh(true);
@@ -1669,11 +1669,11 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   resetUi('client');
   render();
   var savedCode = '';
-  try { savedCode = sessionStorage.getItem(CODE_KEY) || ''; } catch (e) { /* ignore */ }
+  try { savedCode = localStorage.getItem(CODE_KEY) || ''; } catch (e) { /* ignore */ }
   if (savedCode) {
     api({ action: 'login', code: savedCode }).then(function (j) {
       state.code = savedCode; state.unlocked = true; applyData(j.data); render(); checkPush();
-    }).catch(function () { try { sessionStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ } return refresh(); });
+    }).catch(function () { try { localStorage.removeItem(CODE_KEY); } catch (e) { /* ignore */ } return refresh(); });
   } else refresh();
   setInterval(function () { if (state.loaded && !document.hidden) refresh(true); }, 30000);
   document.addEventListener('visibilitychange', function () { if (state.loaded && !document.hidden) refresh(true); });
