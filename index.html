@@ -511,7 +511,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   var wantLine = function (r) {
     return fmtDate(r.date) + ', ' + r.reqStart + ' to ' + fromMin(toMin(r.reqStart) + r.dur) + ' (' + fmtDur(r.dur) + ')';
   };
-  var sessLine = function (date, start, dur) { return fmtDate(date) + ', ' + start + ' to ' + fromMin(toMin(start) + dur) + ' (' + fmtDur(dur) + ')'; };
+  var sessLine = function (date, start, dur) { return fmtDate(date) + ', ' + start + ' to ' + fromMin(toMin(start) + dur); };
   function gcal(r) {
     var d = sessionDate(r).replace(/-/g, '');
     var s = toMin(r.start), e = s + r.fdur;
@@ -915,14 +915,14 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     if (!p || p.kind !== 'edit') return '';
     var id = r.id, data = ' data-scope="panel" data-id="' + id + '"';
     var w = winPick(p.date, widOf(r));
-    return '<li style="display:block"><div class="panel">' +
+    return '<div class="panel" style="margin-top:8px">' +
       '<div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date, true) + '</select></div>' +
       '<div class="row2"><div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
       '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
       '<p><span class="chip ' + (w.id === 'home' ? 'home' : 'other') + '">' + esc(w.loc) + '</span></p>' +
       warnHtml(conflicts(p.date, p.start, p.dur, r.id, w)) +
       '<div class="field"><label for="p-msg-' + id + '">Message to ' + esc(first(r.name)) + ' <span class="opt">(optional)</span></label><input type="text" id="p-msg-' + id + '"' + data + ' data-field="msg" value="' + esc(p.msg) + '" placeholder="Today I would like to give you 2 hours"></div>' +
-      '<div class="btns"><button type="button" class="btn primary" data-act="doEdit" data-id="' + id + '">Save change</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div></li>';
+      '<div class="btns"><button type="button" class="btn primary" data-act="doEdit" data-id="' + id + '">Save change</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
   }
   function panelHtml(r, p) {
     var id = r.id;
@@ -990,8 +990,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var booked = state.requests.filter(function (r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= today; })
       .sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
     if (booked.length) {
-      h += '<section class="card"><h2>Booked by clients</h2><ul class="items">' + booked.map(function (r) {
-        return '<li><span class="t">' + esc(fmtDate(sessionDate(r))) + ' ' + r.start + '</span><span>' + esc(r.name) + ', ' + esc(fmtDur(r.fdur)) + editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button></span></li>' + editLi(r);
+      h += '<section class="card"><h2>Booked by clients</h2><ul class="items sched">' + booked.map(function (r) {
+        var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
+        return '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="chip ' + cls + '">' + esc(locOfReq(r)) + '</span></div>' +
+          '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button></div>' + editLi(r) + '</li>';
       }).join('') + '</ul></section>';
     }
     return h;
