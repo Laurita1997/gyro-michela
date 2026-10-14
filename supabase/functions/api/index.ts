@@ -190,8 +190,9 @@ Deno.serve(async (req: Request) => {
             const nowV = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Vienna" }));
             const [yy, mm, dd] = String(r.fdate || r.date).split("-").map(Number);
             const [hh, mi] = String(r.start).split(":").map(Number);
-            if ((new Date(yy, mm - 1, dd, hh, mi).getTime() - nowV.getTime()) / 3600000 < 24) return { abort: true, err: "This session starts in less than 24 hours. Please contact Michela directly to cancel it." };
+            r.late = (new Date(yy, mm - 1, dd, hh, mi).getTime() - nowV.getTime()) / 3600000 < 24;
           }
+          r.cancelledBy = "client"; r.cancelAt = Date.now();
           r.status = "cancelled";
         } else {
           if (r.status !== "proposed" || !r.proposal) return { abort: true, err: "Nothing to answer here." };

@@ -565,8 +565,9 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function cancelBlock(r, label) {
     if (ui.cancelAsk !== r.id) return '<button type="button" class="btn secondary" data-act="askCancel" data-id="' + r.id + '">' + label + '</button>';
     if (r.status === 'accepted' && hoursUntil(r) < 24) {
-      return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. Please contact Michela directly to cancel it.</p>' +
-        '<button type="button" class="btn secondary" data-act="keepCancel">OK</button></div>';
+      return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. This is late notice, please let Michela know too. Cancel anyway?</p>' +
+        '<div class="btns"><button type="button" class="btn primary" data-act="cancel" data-id="' + r.id + '">Yes, cancel</button>' +
+        '<button type="button" class="btn secondary" data-act="keepCancel">Keep it</button></div></div>';
     }
     return '<div class="cancelask"><p class="line">' + (r.status === 'accepted' ? 'Cancel this session?' : 'Cancel this request?') + '</p>' +
       '<div class="btns"><button type="button" class="btn primary" data-act="cancel" data-id="' + r.id + '">Yes, cancel</button>' +
@@ -958,6 +959,15 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span></li>';
       }).join('') + '</ul></section>';
     }
+    var weekAgo = Date.now() - 14 * 24 * 3600 * 1000;
+    var gone = state.requests.filter(function (r) { return r.status === 'cancelled' && r.cancelledBy === 'client' && (r.cancelAt || 0) > weekAgo; })
+      .sort(function (a, b) { return b.cancelAt - a.cancelAt; });
+    if (gone.length) {
+      h = '<section class="card"><h2>Cancelled by clients</h2><ul class="items">' + gone.map(function (r) {
+        var line = r.start ? sessLine(sessionDate(r), r.start, r.fdur) : wantLine(r);
+        return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(line.replace(/ \(.*\)$/, '')) + (r.late ? ' <span class="tag">Late cancellation</span>' : '') + '</span></li>';
+      }).join('') + '</ul></section>' + h;
+    }
     var today = iso(new Date());
     var booked = state.requests.filter(function (r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= today; })
       .sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
@@ -1285,12 +1295,12 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     cancel: function (id) {
       ui.cancelAsk = null;
       var rr = find(id);
-      if (rr && rr.status === 'accepted' && hoursUntil(rr) < 24) { render(); return; } var r = find(id); A._own('cancel', id, r && r.status === 'accepted' ? 'Session cancelled' : 'Request cancelled'); },
+      var r = find(id); A._own('cancel', id, r && r.status === 'accepted' ? 'Session cancelled' : 'Request cancelled'); },
     cancelSess: function (id) {
       var r = find(id);
       if (!r) return;
       if (!sure('Cancel this session for ' + first(r.name) + '?')) return;
-      r.status = 'cancelled'; r.upd = Date.now();
+      r.status = 'cancelled'; r.cancelledBy = 'michela'; r.upd = Date.now();
       save(); render(); toast('Session cancelled');
     },
     acceptProposal: function (id) { A._own('accept_proposal', id, 'Session confirmed'); },
