@@ -140,10 +140,14 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .srow .shead { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
 .srow .sbody { margin-top: 2px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
 .srow .nm { font-weight: 500; }
-.chip { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-.chip.home { background: var(--accent-soft); color: var(--accent); }
-.chip.other { background: var(--pending-soft); color: var(--pending); }
+.stud { display: inline-flex; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.stud.home { background: var(--accent-soft); color: var(--accent); }
+.stud.other { background: var(--pending-soft); color: var(--pending); }
 .sempty { font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+.srow.fresh { box-shadow: inset 0 0 0 2px var(--ok); }
+.newtag { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--ok); color: var(--surface); }
+.newcard { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
 
 .rules > .rule { display: flex; flex-direction: column; gap: 10px; padding-block: 14px; border-top: 1px solid var(--line); }
 .rules > .rule:first-child { border-top: 0; padding-top: 0; }
@@ -217,6 +221,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   'use strict';
   var KEY = 'studio-signup-me-v1';
   var CODE_KEY = 'studio-signup-code-v1';
+  var SEEN_KEY = 'studio-signup-seen-v1';
   var API = 'https://khzapfmsvtwyxenyshvx.supabase.co/functions/v1/api';
   var DUR = [];
   for (var dm = 60; dm <= 180; dm += 15) DUR.push(dm);
@@ -919,7 +924,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date, true) + '</select></div>' +
       '<div class="row2"><div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
       '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
-      '<p><span class="chip ' + (w.id === 'home' ? 'home' : 'other') + '">' + esc(w.loc) + '</span></p>' +
+      '<p><span class="stud ' + (w.id === 'home' ? 'home' : 'other') + '">' + esc(w.loc) + '</span></p>' +
       warnHtml(conflicts(p.date, p.start, p.dur, r.id, w)) +
       '<div class="field"><label for="p-msg-' + id + '">Message to ' + esc(first(r.name)) + ' <span class="opt">(optional)</span></label><input type="text" id="p-msg-' + id + '"' + data + ' data-field="msg" value="' + esc(p.msg) + '" placeholder="Today I would like to give you 2 hours"></div>' +
       '<div class="btns"><button type="button" class="btn primary" data-act="doEdit" data-id="' + id + '">Save change</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
@@ -990,9 +995,11 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var booked = state.requests.filter(function (r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= today; })
       .sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
     if (booked.length) {
+      var freshIds = newBookings().map(function (x) { return x.id; });
       h += '<section class="card"><h2>Booked by clients</h2><ul class="items sched">' + booked.map(function (r) {
         var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
-        return '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="chip ' + cls + '">' + esc(locOfReq(r)) + '</span></div>' +
+        var fresh = freshIds.indexOf(r.id) > -1;
+        return '<li class="srow ' + cls + (fresh ? ' fresh' : '') + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="stud ' + cls + '">' + esc(locOfReq(r)) + '</span>' + (fresh ? '<span class="newtag">New</span>' : '') + '</div>' +
           '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button></div>' + editLi(r) + '</li>';
       }).join('') + '</ul></section>';
     }
@@ -1013,7 +1020,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         var entries = [], empty = [];
         wins.forEach(function (w) {
           var cls = w.id === 'home' ? 'home' : 'other';
-          var chip = '<span class="chip ' + cls + '">' + esc(w.loc) + '</span>';
+          var chip = '<span class="stud ' + cls + '">' + esc(w.loc) + '</span>';
           var n = 0;
           sessionsIn(d, w).forEach(function (r) {
             n++;
@@ -1028,7 +1035,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
             entries.push({ m: toMin(x.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span>' + chip + '</div>' +
               '<div class="sbody"><span class="nm">' + esc(x.name) + '</span> <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></div></li>' });
           });
-          if (!n) empty.push('<li class="muted sempty"><span class="chip ' + cls + '">' + esc(w.loc) + '</span> no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
+          if (!n) empty.push('<li class="muted sempty"><span class="stud ' + cls + '">' + esc(w.loc) + '</span> no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
         });
         entries.sort(function (a, b) { return a.m - b.m; });
         var body = (entries.length || empty.length) ? '<ul class="items sched">' + entries.map(function (e) { return e.html; }).join('') + empty.join('') + '</ul>' : '';
@@ -1224,8 +1231,25 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<div class="btns"><a class="btn primary" href="' + esc(waLink(t.phone, t.text)) + '" target="_blank" rel="noopener" data-act="sentTell">Message on WhatsApp</a>' +
       '<button type="button" class="btn ghost" data-act="dismissTell">Not now</button></div></section>';
   }
+  function isBooking(r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= iso(new Date()); }
+  function seenList() { try { var v = localStorage.getItem(SEEN_KEY); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function saveSeen(a) { try { localStorage.setItem(SEEN_KEY, JSON.stringify(a)); } catch (e) { /* ignore */ } }
+  function newBookings() {
+    var all = state.requests.filter(isBooking);
+    var seen = seenList();
+    if (seen === null) { saveSeen(all.map(function (r) { return r.id; })); return []; }
+    return all.filter(function (r) { return seen.indexOf(r.id) < 0; }).sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
+  }
+  function newCard() {
+    var list = newBookings();
+    if (!list.length) return '';
+    return '<section class="card newcard"><h2>' + (list.length === 1 ? 'New booking' : list.length + ' new bookings') + '</h2><ul class="items sched">' + list.map(function (r) {
+      var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
+      return '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="stud ' + cls + '">' + esc(locOfReq(r)) + '</span></div><div class="sbody"><span class="nm">' + esc(r.name) + '</span></div></li>';
+    }).join('') + '</ul><div class="btns"><button type="button" class="btn primary" data-act="seenAll">Got it</button></div></section>';
+  }
   function michelaView() {
-    var n = pendingCount();
+    var n = pendingCount() + newBookings().length;
     var tabs = '<div class="tabs" role="group" aria-label="Michela pages">' +
       '<button type="button" data-act="mtab" data-v="requests" aria-pressed="' + (ui.mtab === 'requests') + '">Requests' + (n ? ' <span class="badge">' + n + '</span>' : '') + '</button>' +
       '<button type="button" data-act="mtab" data-v="schedule" aria-pressed="' + (ui.mtab === 'schedule') + '">Schedule</button>' +
@@ -1235,7 +1259,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       return tabs + notifyCard() + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
-    return tabs + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
+    return tabs + newCard() + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
   }
 
   /* ---------- render ---------- */
@@ -1443,6 +1467,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       api({ action: 'push_test', code: state.code }).then(function () { toast('Test sent'); })
         .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
+    seenAll: function () { saveSeen(state.requests.filter(isBooking).map(function (r) { return r.id; })); render(); },
     dismissTell: function () { ui.tell = null; render(); },
     sentTell: function () { setTimeout(function () { ui.tell = null; render(); }, 400); },
     propYes: function (id) {
