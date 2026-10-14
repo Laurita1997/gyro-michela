@@ -726,7 +726,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return '<div class="field"><span class="lbl">Start time</span>' + startPicker(date, win, d, direct) + '</div>' +
       '<div class="field"><span class="lbl">How long</span>' + lenStepper(d) + '</div>' +
       (!direct && bad.length ? '<p class="warnline">That overlaps a booked or closed time. You can still send it, and Michela may suggest another time.</p>' : '') +
-      '<div class="field"><label for="f-note">Note <span class="opt">(optional, for example I can only do 1h20 of it)</span></label><textarea id="f-note" data-scope="draft" data-field="note">' + esc(d.note) + '</textarea></div>' +
+      '<div class="field"><label for="f-note">Note</label><textarea id="f-note" data-scope="draft" data-field="note">' + esc(d.note) + '</textarea></div>' +
       (!direct ? '<p class="hint">Not booked yet. Michela answers and you see it under My requests.</p>' : '<p class="hint">You are booked straight away. No waiting.</p>') +
       (err ? '<p class="err">' + esc(err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary big" data-act="submit">' + esc(label) + '</button></div>';
