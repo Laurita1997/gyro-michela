@@ -986,17 +986,17 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var gone = state.requests.filter(function (r) { return r.status === 'cancelled' && r.cancelledBy === 'client' && (r.cancelAt || 0) > weekAgo; })
       .sort(function (a, b) { return b.cancelAt - a.cancelAt; });
     if (gone.length) {
-      h = '<section class="card"><h2>Cancelled by clients</h2><ul class="items">' + gone.map(function (r) {
+      h = '<section class="card"><h2>Cancelled by clients</h2><ul class="items sched">' + gone.map(function (r) {
         var line = r.start ? sessLine(sessionDate(r), r.start, r.fdur) : wantLine(r);
-        return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(line.replace(/ \(.*\)$/, '')) + (r.late ? ' <span class="tag">Late cancellation</span>' : '') + '</span></li>';
+        return '<li class="srow other"><div class="shead"><span class="t">' + esc(line.replace(/ \(.*\)$/, '')) + '</span>' + (r.late ? '<span class="tag">Late cancellation</span>' : '') + '</div><div class="sbody"><span class="nm">' + esc(r.name) + '</span></div></li>';
       }).join('') + '</ul></section>' + h;
     }
     var today = iso(new Date());
     var booked = state.requests.filter(function (r) { return r.direct && r.status === 'accepted' && sessionDate(r) >= today; })
-      .sort(function (a, b) { return (sessionDate(a) + a.start) < (sessionDate(b) + b.start) ? -1 : 1; });
+      .sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
     if (booked.length) {
       var freshIds = newBookings().map(function (x) { return x.id; });
-      h += '<section class="card"><h2>Booked by clients</h2><ul class="items sched">' + booked.map(function (r) {
+      h += '<section class="card"><h2>Booked by clients</h2><p class="muted">Newest booking first.</p><ul class="items sched">' + booked.map(function (r) {
         var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
         var fresh = freshIds.indexOf(r.id) > -1;
         return '<li class="srow ' + cls + (fresh ? ' fresh' : '') + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="stud ' + cls + '">' + esc(locOfReq(r)) + '</span>' + (fresh ? '<span class="newtag">New</span>' : '') + '</div>' +
