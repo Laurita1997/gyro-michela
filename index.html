@@ -1107,18 +1107,32 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<div class="btns"><button type="button" class="btn primary" data-act="savePin">Save code</button></div></section>';
   }
 
+  function waLink(phone, text) {
+    var n = digits(phone);
+    if (String(phone).replace(/\s/g, '').indexOf('00') === 0) n = n.replace(/^00/, '');
+    else if (n.charAt(0) === '0') n = '43' + n.slice(1);
+    return 'https://wa.me/' + n + '?text=' + encodeURIComponent(text);
+  }
+  function tell(r, text) { ui.tell = { name: first(r.name), phone: r.phone, text: text }; }
+  function tellBar() {
+    var t = ui.tell;
+    if (!t) return '';
+    return '<section class="card tellbar"><h2>Tell ' + esc(t.name) + '</h2><p class="muted">They only see it when they open the page. A message makes sure they know.</p>' +
+      '<div class="btns"><a class="btn primary" href="' + esc(waLink(t.phone, t.text)) + '" target="_blank" rel="noopener">Message on WhatsApp</a>' +
+      '<button type="button" class="btn ghost" data-act="dismissTell">Not now</button></div></section>';
+  }
   function michelaView() {
     var n = pendingCount();
     var tabs = '<div class="tabs" role="group" aria-label="Michela pages">' +
       '<button type="button" data-act="mtab" data-v="requests" aria-pressed="' + (ui.mtab === 'requests') + '">Requests' + (n ? ' <span class="badge">' + n + '</span>' : '') + '</button>' +
       '<button type="button" data-act="mtab" data-v="schedule" aria-pressed="' + (ui.mtab === 'schedule') + '">Schedule</button>' +
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
-    if (ui.mtab === 'schedule') return tabs + scheduleM();
+    if (ui.mtab === 'schedule') return tabs + tellBar() + scheduleM();
     if (ui.mtab === 'setup') {
       return tabs + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
-    return tabs + requestsM();
+    return tabs + tellBar() + requestsM();
   }
 
   /* ---------- render ---------- */
@@ -1282,7 +1296,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       r.fdate = p.date; r.start = p.start; r.fdur = p.dur;
       if (p.msg.trim()) r.reply = p.msg.trim();
       r.upd = Date.now();
-      delete ui.panels[id]; save(); render(); toast('Changed. ' + first(r.name) + ' sees the new time');
+      tell(r, 'Hi ' + first(r.name) + ', I changed your session to ' + sessLine(sessionDate(r), r.start, r.fdur).replace(/ \(.*\)$/, '') + '. ' + (p.msg.trim() ? p.msg.trim() : 'See you then!'));
+      delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Changed');
     },
     addLen: function () {
       var l = ui.len;
@@ -1296,24 +1311,28 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       state.lengths = (state.lengths || []).filter(function (x) { return x.id !== id; });
       save(); render(); toast('Removed');
     },
+    dismissTell: function () { ui.tell = null; render(); },
     closePanel: function (id) { delete ui.panels[id]; render(); },
     doAccept: function (id) {
       var r = find(id), p = ui.panels[id];
       if (!p.start) { toast('Add a start time first'); return; }
       r.status = 'accepted'; r.start = p.start; r.fdur = p.dur; r.fdate = r.date; r.reply = p.msg.trim();
-      delete ui.panels[id]; save(); render(); toast('Confirmed. ' + first(r.name) + ' sees it under My requests');
+      tell(r, 'Hi ' + first(r.name) + ', your session on ' + sessLine(sessionDate(r), r.start, r.fdur).replace(/ \(.*\)$/, '') + ' is confirmed. ' + (r.reply ? r.reply + ' ' : 'See you then!'));
+      delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Confirmed');
     },
     doPropose: function (id) {
       var r = find(id), p = ui.panels[id];
       if (!p.start) { toast('Add a start time first'); return; }
       var w = winPick(p.date, widOf(r));
       r.status = 'proposed'; r.proposal = { date: p.date, start: p.start, dur: p.dur, msg: p.msg.trim(), wid: w.id, loc: w.loc };
-      delete ui.panels[id]; save(); render(); toast('Suggestion sent to ' + first(r.name));
+      tell(r, 'Hi ' + first(r.name) + ', that time does not work for me. Would ' + sessLine(p.date, p.start, p.dur).replace(/ \(.*\)$/, '') + ' work for you? You can answer on ' + location.origin.replace(/^https?:\/\//, '') + (p.msg.trim() ? ' ' + p.msg.trim() : ''));
+      delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Suggestion saved');
     },
     doDecline: function (id) {
       var r = find(id), p = ui.panels[id];
       r.status = 'declined'; r.reply = p.msg.trim();
-      delete ui.panels[id]; save(); render(); toast('Request declined');
+      tell(r, 'Hi ' + first(r.name) + ', sorry, I cannot do that time. ' + (p.msg.trim() ? p.msg.trim() : 'You are welcome to ask for another day.'));
+      delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Request declined');
     },
     quickClose: function (id, v) {
       ui.block.date = v; ui.mtab = 'setup'; render();
