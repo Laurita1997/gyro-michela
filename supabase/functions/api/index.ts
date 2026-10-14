@@ -1,5 +1,4 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
 
 const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const CORS = {
@@ -118,6 +117,7 @@ async function notifyMichela(title: string, body: string, tag?: string) {
     const { data: k } = await sb.from("push_keys").select("*").eq("id", 1).single();
     const { data: subs } = await sb.from("push_subs").select("*");
     if (!k || !subs || !subs.length) return;
+    const webpush = (await import("npm:web-push@3.6.7")).default;
     webpush.setVapidDetails("https://gyro-michela.vercel.app", k.pub, k.priv);
     const payload = JSON.stringify({ title, body, tag, url: "/" });
     await Promise.allSettled(subs.map(async (s: any) => {
