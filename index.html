@@ -937,6 +937,12 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
 
   /* ---------- Michela view ---------- */
   function placeChip(wid, loc) { return wid === 'home' ? '' : '<span class="stud other">' + esc(loc) + '</span>'; }
+  function standOcc(id) {
+    var m = /^st-(.+)-(\d{4}-\d{2}-\d{2})$/.exec(String(id));
+    if (!m) return null;
+    var s = state.standing.filter(function (x) { return x.id === m[1]; })[0];
+    return s ? { s: s, date: m[2] } : null;
+  }
   function editBtn(r) { return ' <button type="button" class="link" data-act="editSess" data-id="' + r.id + '">Change</button>'; }
   function editLi(r) {
     var p = ui.panels[r.id];
@@ -1051,8 +1057,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
           sessionsIn(d, w).forEach(function (r) {
             n++;
             entries.push({ m: toMin(r.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span>' + chip + '</div>' +
-              '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button>') + '</div>' +
-              (r.standing ? '' : editLi(r)) + '</li>' });
+              '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + (r.standing ? ' <span class="tag">weekly</span> <button type="button" class="link" data-act="editSess" data-id="' + r.id + '">Change</button> <button type="button" class="link" data-act="skipStanding" data-id="' + r.sid + '" data-v="' + d + '">Skip this date</button>' : editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button>') + '</div>' +
+              editLi(r.standing ? { id: r.id, name: r.name, wid: w.id } : r) + '</li>' });
           });
           state.standing.filter(function (x) {
             return x.wid === w.id && x.dow === parseISO(d).getDay() && state.skips[x.id + '|' + d];
@@ -1476,12 +1482,27 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       render();
     },
     editSess: function (id) {
+      var st = standOcc(id);
+      if (st) { ui.panels[id] = { kind: 'edit', start: st.s.start, dur: st.s.dur, date: st.date, msg: '' }; render(); return; }
       var r = find(id);
       if (!r) return;
       ui.panels[id] = { kind: 'edit', start: r.start, dur: r.fdur, date: sessionDate(r), msg: '' };
       render();
     },
     doEdit: function (id) {
+      var st = standOcc(id), sp = ui.panels[id];
+      if (st && sp) {
+        if (!sp.start) { toast('Add a start time first'); return; }
+        var w2 = winPick(sp.date, st.s.wid);
+        var nr = { id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: st.s.name, phone: st.s.phone || '', email: '', date: sp.date, wid: st.s.wid, loc: w2.loc,
+          reqStart: sp.start, dur: sp.dur, note: '', status: 'accepted', fdate: sp.date, start: sp.start, fdur: sp.dur, created: Date.now(), upd: Date.now(), byMichela: true };
+        if (sp.msg.trim()) nr.reply = sp.msg.trim();
+        state.requests.push(nr);
+        state.skips[st.s.id + '|' + st.date] = true;
+        if (st.s.phone) tell(nr, 'Hi ' + first(nr.name) + ', this week I moved your session to ' + sessLine(sp.date, sp.start, sp.dur).replace(/ \(.*\)$/, '') + '. ' + (sp.msg.trim() ? sp.msg.trim() : 'See you then!'));
+        delete ui.panels[id]; save(); render(); window.scrollTo(0, 0); toast('Changed for this week only');
+        return;
+      }
       var r = find(id), p = ui.panels[id];
       if (!r || !p) return;
       if (!p.start) { toast('Add a start time first'); return; }
