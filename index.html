@@ -1252,7 +1252,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
     if (ui.mtab === 'schedule') return tabs + tellBar() + scheduleM();
     if (ui.mtab === 'setup') {
-      return tabs + notifyCard() + studioCard() + standCard() + lengthsCard() + blockForm() + pinCard() +
+      return tabs + blockForm() + standCard() + lengthsCard() + studioCard() + notifyCard() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
     return tabs + newCard() + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
