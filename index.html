@@ -1068,7 +1068,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(d) + '</b>' + (pc ? pill('pending', pc + (pc > 1 ? ' requests' : ' request')) : '') + '<button type="button" class="link push" data-act="quickClose" data-v="' + d + '">Close time</button></div>' +
           body + (closed ? '<ul class="items">' + closed + '</ul>' : '') + '</div>';
   }
-  var SCHED_CAL = /[?&]cal=1\b/.test(location.search);
+  var SCHED_CAL = true;
   function scheduleCal() {
     var t0 = iso(new Date()), hz = horizon();
     if (!ui.sm) ui.sm = monthKey(t0);
