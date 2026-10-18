@@ -595,7 +595,11 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return sessionDate(r) <= iso(n);
   }
   function cancelBlock(r, label) {
-    if (r.status === 'accepted' && sameDay(r)) return '<p class="muted">This session is today. To cancel it, please contact Michela directly.</p>';
+    if (r.status === 'accepted' && sameDay(r)) {
+      var m = 'Hi Michela, it\'s ' + first(r.name) + '. I need to cancel my session today (' + sessLine(sessionDate(r), r.start, r.fdur) + '). Sorry!';
+      return '<p class="muted">This session is today. To cancel it, please contact Michela directly.</p>' +
+        '<a class="btn secondary" target="_blank" rel="noopener" href="' + waLink(MICHELA_PHONE, m) + '">Message Michela on WhatsApp</a>';
+    }
     if (ui.cancelAsk !== r.id) return '<button type="button" class="btn secondary" data-act="askCancel" data-id="' + r.id + '">' + label + '</button>';
     if (r.status === 'accepted' && hoursUntil(r) < 24) {
       return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. This is late notice. Michela gets a message, but please let her know too. Cancel anyway?</p>' +
@@ -628,6 +632,11 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     } else {
       status = pill('quiet', 'Cancelled');
       body = '<p class="muted">' + esc(wantLine(r)) + '</p>';
+      if (r.cancelledBy === 'client' && r.start) {
+        var late = r.late || hoursUntil(r) < 24;
+        var msg = 'Hi Michela, it\'s ' + first(r.name) + '. I cancelled my session on ' + sessLine(sessionDate(r), r.start, r.fdur) + '.' + (late ? ' Sorry for the short notice!' : '');
+        actions = '<a class="btn secondary" target="_blank" rel="noopener" href="' + waLink(MICHELA_PHONE, msg) + '">' + (late ? 'Let Michela know on WhatsApp' : 'Message Michela on WhatsApp') + '</a>';
+      }
     }
     return '<div class="card req"><div class="req-head">' + status + '</div>' + body + (actions ? '<div class="btns">' + actions + '</div>' : '') + '</div>';
   }
@@ -1254,6 +1263,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return '<section class="card"><h2>Notifications</h2>' + body + (ui.pushErr ? '<p class="err">' + esc(ui.pushErr) + '</p>' : '') + '</section>';
   }
 
+  var MICHELA_PHONE = '+43 699 10630578';
   function waLink(phone, text) {
     var n = digits(phone);
     if (String(phone).replace(/\s/g, '').indexOf('00') === 0) n = n.replace(/^00/, '');
