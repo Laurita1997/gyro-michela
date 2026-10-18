@@ -502,7 +502,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (blocked) {
         rem = 0;
       } else {
-        var buf = cap === 1 ? 15 : 0;
+        var buf = 0;
         var used = sess.filter(function (r) {
           var a = toMin(r.start), z = a + r.fdur;
           return t < z + buf && t + 15 > a - buf;
@@ -523,7 +523,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     win = win || winPick(date, 'home');
     var s = toMin(start), e = s + dur;
     if (s < toMin(win.from) || e > toMin(win.to)) out.push('Outside the hours at ' + win.loc + ' (' + win.from + ' to ' + win.to + ')');
-    var cap = win.cap, buf = cap === 1 ? 15 : 0, full = false;
+    var cap = win.cap, buf = 0, full = false;
     var sess = sessionsIn(date, win).filter(function (r) { return r.id !== ignoreId; });
     for (var t = s; t < e && !full; t += 15) {
       var used = sess.filter(function (r) {
@@ -532,7 +532,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       }).length;
       if (used >= cap) full = true;
     }
-    if (full) out.push(cap === 1 ? 'Clashes with another session (15 min break included)' : 'Both spots are taken at that time');
+    if (full) out.push(cap === 1 ? 'Clashes with another session' : 'Both spots are taken at that time');
     state.blocks.forEach(function (b) {
       if (b.date !== date) return;
       var a = b.whole ? 0 : toMin(b.from), z = b.whole ? 1440 : toMin(b.to);
@@ -1781,7 +1781,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       else if (!daysFor(s.wid).length) err = 'That place has no days set.';
       else if (a < toMin(w.from) || z > toMin(w.to)) err = 'Outside the hours at ' + w.loc + ' (' + w.from + ' to ' + w.to + ').';
       else {
-        var buf = w.cap === 1 ? 15 : 0;
+        var buf = 0;
         var same = state.standing.filter(function (x) {
           return x.wid === s.wid && x.dow === s.dow && a < toMin(x.start) + x.dur + buf && z + buf > toMin(x.start);
         });

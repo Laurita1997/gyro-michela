@@ -102,7 +102,7 @@ function placeConflict(d: any, wid: string, date: string, start: string, dur: nu
   if (!pl) return "That place is not used on this day.";
   const s = toMin(start), e = s + dur;
   if (s < toMin(pl.from) || e > toMin(pl.to)) return "That is outside the hours (" + pl.from + " to " + pl.to + ").";
-  const buf = pl.cap === 1 ? 15 : 0;
+  const buf = 0;
   const dow = new Date(date + "T12:00:00Z").getUTCDay();
   const sess: { a: number; z: number }[] = [];
   (d.requests || []).forEach((r: any) => {
