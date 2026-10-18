@@ -1094,7 +1094,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
   function scheduleM() {
     if (!SCHED_CAL) return scheduleList();
-    var cal = ui.sview === 'cal';
+    var cal = ui.sview !== 'list';
     return '<div class="switch" role="group" aria-label="Schedule view">' +
       '<button type="button" data-act="schedView" data-v="list" aria-pressed="' + !cal + '">List</button>' +
       '<button type="button" data-act="schedView" data-v="cal" aria-pressed="' + cal + '">Calendar</button></div>' + (cal ? scheduleCal() : scheduleList());
