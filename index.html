@@ -913,6 +913,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
 
   /* ---------- Michela view ---------- */
+  function placeChip(wid, loc) { return wid === 'home' ? '' : '<span class="stud other">' + esc(loc) + '</span>'; }
   function editBtn(r) { return ' <button type="button" class="link" data-act="editSess" data-id="' + r.id + '">Change</button>'; }
   function editLi(r) {
     var p = ui.panels[r.id];
@@ -923,7 +924,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<div class="field"><label for="p-date-' + id + '">Day</label><select id="p-date-' + id + '"' + data + ' data-field="date" data-rerender>' + dateOptions(p.date, true) + '</select></div>' +
       '<div class="row2"><div class="field"><label for="p-start-' + id + '">Start time</label><input type="time" step="900" id="p-start-' + id + '"' + data + ' data-field="start" data-rerender value="' + esc(p.start) + '"></div>' +
       '<div class="field"><label for="p-dur-' + id + '">Length</label><select id="p-dur-' + id + '"' + data + ' data-field="dur" data-rerender>' + durOptions(p.dur) + '</select></div></div>' +
-      '<p><span class="stud ' + (w.id === 'home' ? 'home' : 'other') + '">' + esc(w.loc) + '</span></p>' +
+      (w.id === 'home' ? '' : '<p>' + placeChip(w.id, w.loc) + '</p>') +
       warnHtml(conflicts(p.date, p.start, p.dur, r.id, w)) +
       '<div class="field"><label for="p-msg-' + id + '">Message to ' + esc(first(r.name)) + ' <span class="opt">(optional)</span></label><input type="text" id="p-msg-' + id + '"' + data + ' data-field="msg" value="' + esc(p.msg) + '" placeholder="Today I would like to give you 2 hours"></div>' +
       '<div class="btns"><button type="button" class="btn primary" data-act="doEdit" data-id="' + id + '">Save change</button><button type="button" class="btn ghost" data-act="closePanel" data-id="' + id + '">Back</button></div></div>';
@@ -998,7 +999,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       h += '<section class="card"><h2>Booked by clients</h2><p class="muted">Newest booking first.</p><ul class="items sched">' + booked.map(function (r) {
         var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
         var fresh = freshIds.indexOf(r.id) > -1;
-        return '<li class="srow ' + cls + (fresh ? ' fresh' : '') + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="stud ' + cls + '">' + esc(locOfReq(r)) + '</span>' + (fresh ? '<span class="newtag">New</span>' : '') + '</div>' +
+        return '<li class="srow ' + cls + (fresh ? ' fresh' : '') + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span>' + placeChip(w.id, locOfReq(r)) + (fresh ? '<span class="newtag">New</span>' : '') + '</div>' +
           '<div class="sbody"><span class="nm">' + esc(r.name) + '</span>' + editBtn(r) + ' <button type="button" class="link" data-act="cancelSess" data-id="' + r.id + '">Cancel</button></div>' + editLi(r) + '</li>';
       }).join('') + '</ul></section>';
     }
@@ -1019,7 +1020,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         var entries = [], empty = [];
         wins.forEach(function (w) {
           var cls = w.id === 'home' ? 'home' : 'other';
-          var chip = '<span class="stud ' + cls + '">' + esc(w.loc) + '</span>';
+          var chip = placeChip(w.id, w.loc);
           var n = 0;
           sessionsIn(d, w).forEach(function (r) {
             n++;
@@ -1034,7 +1035,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
             entries.push({ m: toMin(x.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span>' + chip + '</div>' +
               '<div class="sbody"><span class="nm">' + esc(x.name) + '</span> <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></div></li>' });
           });
-          if (!n) empty.push('<li class="muted sempty"><span class="stud ' + cls + '">' + esc(w.loc) + '</span> no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
+          if (!n && w.id !== 'home') empty.push('<li class="muted sempty">' + placeChip(w.id, w.loc) + ' no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
         });
         entries.sort(function (a, b) { return a.m - b.m; });
         var body = (entries.length || empty.length) ? '<ul class="items sched">' + entries.map(function (e) { return e.html; }).join('') + empty.join('') + '</ul>' : '';
@@ -1247,7 +1248,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     if (!list.length) return '';
     return '<section class="card newcard"><h2>' + (list.length === 1 ? 'New booking' : list.length + ' new bookings') + '</h2><ul class="items sched">' + list.map(function (r) {
       var w = winPick(sessionDate(r), widOf(r)), cls = w.id === 'home' ? 'home' : 'other';
-      return '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span><span class="stud ' + cls + '">' + esc(locOfReq(r)) + '</span></div><div class="sbody"><span class="nm">' + esc(r.name) + '</span></div></li>';
+      return '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + esc(fmtDate(sessionDate(r))) + ', ' + r.start + ' to ' + fromMin(toMin(r.start) + r.fdur) + '</span>' + placeChip(w.id, locOfReq(r)) + '</div><div class="sbody"><span class="nm">' + esc(r.name) + '</span></div></li>';
     }).join('') + '</ul><div class="btns"><button type="button" class="btn primary" data-act="seenAll">Got it</button></div></section>';
   }
   function michelaView() {
