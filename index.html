@@ -1035,7 +1035,6 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
             entries.push({ m: toMin(x.start), html: '<li class="srow ' + cls + '"><div class="shead"><span class="t">' + x.start + ' to ' + fromMin(toMin(x.start) + x.dur) + '</span>' + chip + '</div>' +
               '<div class="sbody"><span class="nm">' + esc(x.name) + '</span> <span class="tag">skipped</span> <button type="button" class="link" data-act="unskipStanding" data-id="' + x.id + '" data-v="' + d + '">Undo</button></div></li>' });
           });
-          if (!n && w.id !== 'home') empty.push('<li class="muted sempty">' + placeChip(w.id, w.loc) + ' no sessions' + (w.open ? ', open ' + w.from + ' to ' + w.to : '') + (w.cap > 1 ? ', ' + capText(w) : '') + '</li>');
         });
         entries.sort(function (a, b) { return a.m - b.m; });
         var body = (entries.length || empty.length) ? '<ul class="items sched">' + entries.map(function (e) { return e.html; }).join('') + empty.join('') + '</ul>' : '';
