@@ -974,7 +974,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function requestsM() {
     var pending = state.requests.filter(function (r) { return r.status === 'pending'; }).sort(function (a, b) { return a.created - b.created; });
     var waiting = state.requests.filter(function (r) { return r.status === 'proposed'; });
-    var h = pending.length ? pending.map(reqCardM).join('') : '<div class="card"><p>Nothing waiting. New requests show up here, oldest first.</p></div>';
+    var h = pending.length ? pending.map(reqCardM).join('') : '';
     if (waiting.length) {
       h += '<section class="card"><h2>Waiting for an answer on WhatsApp</h2><ul class="items">' + waiting.map(function (r) {
         return '<li><span class="t">' + esc(r.name) + '</span><span>' + esc(sessLine(r.proposal.date, r.proposal.start, r.proposal.dur)) + '</span>' +
@@ -1253,7 +1253,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   function michelaView() {
     var n = pendingCount() + newBookings().length;
     var tabs = '<div class="tabs" role="group" aria-label="Michela pages">' +
-      '<button type="button" data-act="mtab" data-v="requests" aria-pressed="' + (ui.mtab === 'requests') + '">Requests' + (n ? ' <span class="badge">' + n + '</span>' : '') + '</button>' +
+      '<button type="button" data-act="mtab" data-v="requests" aria-pressed="' + (ui.mtab === 'requests') + '">Bookings' + (n ? ' <span class="badge">' + n + '</span>' : '') + '</button>' +
       '<button type="button" data-act="mtab" data-v="schedule" aria-pressed="' + (ui.mtab === 'schedule') + '">Schedule</button>' +
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
     if (ui.mtab === 'schedule') return tabs + tellBar() + scheduleM();
