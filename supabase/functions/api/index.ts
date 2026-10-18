@@ -83,22 +83,41 @@ const toMin = (t: string) => { const p = String(t).split(":").map(Number); retur
 const fromMin = (n: number) => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
 const HOME_FROM = "08:00", HOME_TO = "20:00";
 
-// returns a message when Michela's own studio cannot take this booking, else ""
-function homeConflict(d: any, date: string, start: string, dur: number): string {
+// the place (Michela's studio or one of her other places) a booking is for, or null when it is not open that day
+function placeFor(d: any, wid: string, date: string): { from: string; to: string; cap: number; name: string } | null {
+  if (wid === "home") return { from: HOME_FROM, to: HOME_TO, cap: 1, name: "Michela's studio" };
+  const rule = (d.rules || []).find((x: any) => x.id === wid);
+  if (!rule) return null;
+  const dow = new Date(date + "T12:00:00Z").getUTCDay();
+  if (!(rule.days || []).includes(dow)) return null;
+  if (rule.since && date < rule.since) return null;
+  if (rule.until && date > rule.until) return null;
+  const h = (rule.hours && rule.hours[dow]) || { from: rule.from, to: rule.to };
+  return { from: h.from, to: h.to, cap: Math.max(1, Math.min(10, Number(rule.cap) || 1)), name: rule.studio };
+}
+
+// returns a message when this place cannot take the booking, else ""
+function placeConflict(d: any, wid: string, date: string, start: string, dur: number, phone: string): string {
+  const pl = placeFor(d, wid, date);
+  if (!pl) return "That place is not used on this day.";
   const s = toMin(start), e = s + dur;
-  if (s < toMin(HOME_FROM) || e > toMin(HOME_TO)) return "That is outside Michela's hours (08:00 to 20:00).";
-  const buf = 15;
+  if (s < toMin(pl.from) || e > toMin(pl.to)) return "That is outside the hours (" + pl.from + " to " + pl.to + ").";
+  const buf = pl.cap === 1 ? 15 : 0;
   const dow = new Date(date + "T12:00:00Z").getUTCDay();
   const sess: { a: number; z: number }[] = [];
   (d.requests || []).forEach((r: any) => {
-    if (r.status === "accepted" && (r.fdate || r.date) === date && widOf(r) === "home") sess.push({ a: toMin(r.start), z: toMin(r.start) + Number(r.fdur) });
+    if (r.status === "accepted" && (r.fdate || r.date) === date && widOf(r) === wid) sess.push({ a: toMin(r.start), z: toMin(r.start) + Number(r.fdur) });
   });
   (d.standing || []).forEach((x: any) => {
-    if (widOf(x) === "home" && x.dow === dow && !(d.skips || {})[x.id + "|" + date]) sess.push({ a: toMin(x.start), z: toMin(x.start) + Number(x.dur) });
+    if (widOf(x) === wid && x.dow === dow && !(d.skips || {})[x.id + "|" + date]) sess.push({ a: toMin(x.start), z: toMin(x.start) + Number(x.dur) });
   });
   for (let t = s; t < e; t += 15) {
-    if (sess.some((q) => t < q.z + buf && t + 15 > q.a - buf)) return "That time was just taken. Please pick another time.";
+    const used = sess.filter((q) => t < q.z + buf && t + 15 > q.a - buf).length;
+    if (used >= pl.cap) return pl.cap === 1 ? "That time was just taken. Please pick another time." : "That time is full. Please pick another time.";
   }
+  const mine = (d.requests || []).some((r: any) => r.status === "accepted" && samePhone(r.phone, phone) && (r.fdate || r.date) === date &&
+    s < toMin(r.start) + Number(r.fdur) && e > toMin(r.start));
+  if (mine) return "You already have a session at that time.";
   for (const b of d.blocks || []) {
     if (b.date !== date) continue;
     const a = b.whole ? 0 : toMin(b.from), z = b.whole ? 1440 : toMin(b.to);
@@ -163,43 +182,30 @@ Deno.serve(async (req: Request) => {
         const d = row.data;
         r.dur = usual(d);
         const wid = r.wid || "home";
-        let loc = "Michela's studio";
-        let direct = false;
-        if (wid === "home") {
-          const last = new Date(Date.now() + 30 * 24 * 3600e3).toISOString().slice(0, 10);
-          if (r.date < todayISO() || r.date > last) return { abort: true, err: "That day is not open to book yet." };
-          if ((d.blocks || []).some((b: any) => b.date === r.date && b.whole)) return { abort: true, err: "That day is not available." };
-          const bad = homeConflict(d, r.date, r.reqStart, Number(r.dur));
-          if (bad) return { abort: true, err: bad };
-          direct = true;
-        }
-        if (wid !== "home") {
-          const rule = (d.rules || []).find((x: any) => x.id === wid);
-          if (!rule) return { abort: true, err: "That studio is not available." };
-          loc = rule.studio;
-          const dow = new Date(r.date + "T12:00:00Z").getUTCDay();
-          if (!rule.days.includes(dow)) return { abort: true, err: "That studio is not used on this day." };
-          if (!d.open[wid + "|" + r.date] && !knownClient(d, phone)) return { abort: true, err: "That day is not open to book yet." };
-        }
-        const pend = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && (x.status === "pending" || x.status === "proposed")).length;
-        if (pend >= 6) return { abort: true, err: "You already have several open requests. Please wait for Michela's reply." };
-        if (direct) {
-          const upcoming = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && x.status === "accepted" && (x.fdate || x.date) >= todayISO() && widOf(x) === "home").length;
-          if (upcoming >= 4) return { abort: true, err: "You already have 4 upcoming sessions. Please cancel one or ask Michela." };
-        }
+        const pl = placeFor(d, wid, r.date);
+        if (!pl) return { abort: true, err: wid === "home" ? "That day is not open to book yet." : "That place is not used on this day." };
+        const last = new Date(Date.now() + 30 * 24 * 3600e3).toISOString().slice(0, 10);
+        if (r.date < todayISO() || r.date > last) return { abort: true, err: "That day is not open to book yet." };
+        if ((d.blocks || []).some((b: any) => b.date === r.date && b.whole)) return { abort: true, err: "That day is not available." };
+        const bad = placeConflict(d, wid, r.date, r.reqStart, Number(r.dur), phone);
+        if (bad) return { abort: true, err: bad };
+        const loc = pl.name;
+        const direct = true;
+        const upcoming = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && x.status === "accepted" && (x.fdate || x.date) >= todayISO()).length;
+        if (upcoming >= 4) return { abort: true, err: "You already have 4 upcoming sessions. Please cancel one or ask Michela." };
         created = {
           id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           name, phone, email: clip(r.email, 120).trim(), date: r.date, wid, loc,
           reqStart: r.reqStart, dur: Number(r.dur), note: clip(r.note, 500).trim(),
           status: "pending", created: Date.now(), upd: Date.now(),
         };
-        if (direct) Object.assign(created, { status: "accepted", direct: true, fdate: r.date, start: r.reqStart, fdur: Number(r.dur) });
+        Object.assign(created, { status: "accepted", direct: true, fdate: r.date, start: r.reqStart, fdur: Number(r.dur) });
         d.requests = [...(d.requests || []), created];
         return { data: d };
       });
       if (res.abort) return fail(res.err);
       const when = fmtD(created.fdate || created.date) + ", " + (created.start || created.reqStart);
-      await notifyMichela(created.status === "accepted" ? "New booking" : "New request", name + ", " + when + (created.loc && created.loc !== "Michela's studio" ? " (" + created.loc + ")" : ""), "req");
+      await notifyMichela("New booking", name + ", " + when + (created.loc && created.loc !== "Michela's studio" ? " (" + created.loc + ")" : ""), "req");
       return json({ ok: true, id: created.id, status: created.status });
     }
 
