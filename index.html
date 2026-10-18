@@ -183,6 +183,25 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .tl-seg.free { background: var(--hl); }
 .tl-seg.busy { background: var(--ink-soft); opacity: 0.55; }
 .tl-lab { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-soft); margin-top: 4px; }
+.tip { position: fixed; left: 0; right: 0; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 4; display: flex; justify-content: center; padding: 0 12px; pointer-events: none; }
+.tip-in { pointer-events: auto; width: 100%; max-width: 616px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,.14); padding: 9px 10px 9px 12px; display: flex; gap: 10px; align-items: center; }
+.tip-in p { margin: 0; flex: 1; min-width: 0; font-size: 13px; line-height: 1.3; color: var(--ink-soft); }
+.tip-in p b { display: block; font-size: 14px; color: var(--ink); }
+.tip-in .tb { display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
+.tip-in .btn { padding: 7px 10px; font-size: 13px; white-space: nowrap; }
+.tip-in .link { text-align: center; }
+.tip-spacer { height: 76px; }
+.tip-dim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20; display: flex; align-items: flex-end; justify-content: center; }
+.tip-sheet { background: var(--surface); width: 100%; max-width: 640px; border-radius: 18px 18px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 6px; }
+.tip-sheet h3 { margin: 0; font: 600 18px var(--font-display); }
+.tip-sheet .sub { margin: 0 0 6px; color: var(--ink-soft); font-size: 14px; }
+.tip-tabs { display: flex; gap: 6px; margin-bottom: 4px; }
+.tip-tabs button { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); font: 600 13px var(--font-body); cursor: pointer; }
+.tip-tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.tip-step { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.tip-step .n { flex: none; width: 24px; height: 24px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.tip-step .gl { margin-left: auto; flex: none; width: 34px; height: 34px; border-radius: 9px; background: var(--ground); border: 1px solid var(--line); display: grid; place-items: center; }
+.tip-step .gl svg { width: 20px; height: 20px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .bnav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--ground); border-top: 1px solid var(--line); display: flex; justify-content: center; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 5; }
 .bnav-in { width: 100%; max-width: 640px; display: flex; gap: 4px; padding: 8px 12px; }
 .bnav button { flex: 1; min-height: 48px; border: 0; border-radius: 14px; background: transparent; color: var(--ink-soft); font: 600 14px var(--font-body); cursor: pointer; }
@@ -1327,6 +1346,47 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return tabs + newCard() + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
   }
 
+  /* ---------- add to home screen tip (clients only) ---------- */
+  var TIP_KEY = 'gyro_tip_done';
+  function tipOs() {
+    var ua = navigator.userAgent || '';
+    if (/iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
+    if (/android/i.test(ua)) return 'android';
+    return '';
+  }
+  function tipWanted() {
+    try {
+      if (ui.tipHidden || !tipOs()) return false;
+      if (navigator.standalone || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)) return false;
+      try { if (localStorage.getItem(TIP_KEY)) return false; } catch (e) { /* fine */ }
+      return true;
+    } catch (e) { return false; }
+  }
+  function tipDone() {
+    ui.tipHidden = true; ui.tipOpen = false;
+    try { localStorage.setItem(TIP_KEY, '1'); } catch (e) { /* fine */ }
+  }
+  function tipHtml() {
+    if (!tipWanted()) return '';
+    var h = '<div class="tip-spacer"></div><div class="tip"><div class="tip-in"><p><b>Book in one tap</b>Add this page to your home screen.</p>' +
+      '<div class="tb"><button type="button" class="btn primary" data-act="tipHow">Show me how</button><button type="button" class="link" data-act="tipNot">Not now</button></div></div></div>';
+    if (ui.tipOpen) {
+      var os = ui.tipOs || tipOs(), ios = os === 'ios';
+      var share = '<svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v9h14v-9h-1"/></svg>';
+      var plus = '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>';
+      var dots = '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>';
+      h += '<div class="tip-dim"><div class="tip-sheet" role="dialog" aria-label="Add to home screen"><h3>Add Gyro to your home screen</h3><p class="sub">Two taps, then it opens like an app.</p>' +
+        '<div class="tip-tabs"><button type="button" data-act="tipOs" data-v="ios" aria-pressed="' + ios + '">iPhone</button><button type="button" data-act="tipOs" data-v="android" aria-pressed="' + !ios + '">Android</button></div>' +
+        (ios
+          ? '<div class="tip-step"><span class="n">1</span><span>Tap the Share button at the bottom of Safari</span><span class="gl">' + share + '</span></div>' +
+            '<div class="tip-step"><span class="n">2</span><span>Scroll down and tap Add to Home Screen</span><span class="gl">' + plus + '</span></div>'
+          : '<div class="tip-step"><span class="n">1</span><span>Tap the three dots at the top right of Chrome</span><span class="gl">' + dots + '</span></div>' +
+            '<div class="tip-step"><span class="n">2</span><span>Tap Add to Home screen</span><span class="gl">' + plus + '</span></div>') +
+        '<button type="button" class="btn primary big" data-act="tipFinish">Got it</button></div></div>';
+    }
+    return h;
+  }
+
   /* ---------- render ---------- */
   function render() {
     if (!state.loaded) {
@@ -1336,7 +1396,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var act = document.activeElement;
     var aid = act && act.id;
     var body = (ui.view === 'michela' && state.unlocked) ? michelaView() : clientView();
-    app.innerHTML = head() + (ui.codeOpen && !state.unlocked ? codeCard() : '') + body;
+    app.innerHTML = head() + (ui.codeOpen && !state.unlocked ? codeCard() : '') + body + ((ui.view === 'michela' && state.unlocked) ? '' : tipHtml());
     if (aid) {
       var el = document.getElementById(aid);
       if (el && el.focus) { try { el.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
@@ -1457,6 +1517,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       });
     },
     askCancel: function (id) { ui.cancelAsk = id; render(); },
+    tipHow: function () { ui.tipOpen = true; render(); },
+    tipNot: function () { tipDone(); render(); },
+    tipFinish: function () { tipDone(); render(); },
+    tipOs: function (id, v) { ui.tipOs = v; render(); },
     keepCancel: function () { ui.cancelAsk = null; render(); },
     cancel: function (id) {
       ui.cancelAsk = null;
