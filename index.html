@@ -376,7 +376,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return { name: state.me.name || '', phone: state.me.phone || '', date: '', wid: '', start: '', auto: true, dur: usualDur(state.me.name, state.me.phone), note: '', err: '' };
   }
   function newBlock() { return { date: tomorrow(), whole: false, from: '14:00', to: '17:00', note: '', err: '' }; }
-  function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, since: '', until: '', err: '' }; }
+  function newRule() { return { id: null, studio: '', days: [], hours: {}, shared: { from: '09:00', to: '13:00' }, over: {}, cap: 2, err: '' }; }
   function newStand() { return { name: '', phone: '', wid: 'home', dow: 6, start: '11:00', dur: 60, err: '' }; }
   function resetUi(view) {
     ui = { month: monthKey(tomorrow()), view: view, ctab: VARIANT === 'd' ? 'home' : VARIANT === 'e' ? 'cal' : 'free', mtab: 'requests', draft: null, panels: {}, block: null, rule: null, stand: null, sent: null, codeOpen: false, code: { val: '', err: '' }, pin: { val: '', err: '' } };
@@ -416,7 +416,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var dow = parseISO(date).getDay(), out = [];
     if (date <= horizon()) out.push(HOME);
     state.rules.forEach(function (r) {
-      if (r.days.indexOf(dow) > -1 && date <= horizon() && (!r.since || date >= r.since) && (!r.until || date <= r.until)) { var h = hoursFor(r, dow); out.push({ id: r.id, loc: r.studio, from: h.from, to: h.to, cap: r.cap, open: true }); }
+      if (r.days.indexOf(dow) > -1 && date <= horizon()) { var h = hoursFor(r, dow); out.push({ id: r.id, loc: r.studio, from: h.from, to: h.to, cap: r.cap, open: true }); }
     });
     return out;
   }
@@ -1052,8 +1052,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var data = ' data-scope="rule"';
     var editing = !!rl.id;
     var list = state.rules.map(function (r) {
-      var span = (r.since || r.until) ? '. ' + (r.since ? 'From ' + fmtDate(r.since) : '') + (r.since && r.until ? ' ' : '') + (r.until ? 'Until ' + fmtDate(r.until) : '') : '';
-      return '<div class="rule"><div class="dayrow"><b>' + esc(r.studio) + '</b><span class="push"><button type="button" class="link" data-act="editRule" data-id="' + r.id + '">Edit</button> &nbsp; <button type="button" class="link" data-act="removeRule" data-id="' + r.id + '">Remove</button></span></div><p class="loc">' + esc(ruleLine(r)) + esc(span) + '</p></div>';
+      return '<div class="rule"><div class="dayrow"><b>' + esc(r.studio) + '</b><span class="push"><button type="button" class="link" data-act="editRule" data-id="' + r.id + '">Edit</button> &nbsp; <button type="button" class="link" data-act="removeRule" data-id="' + r.id + '">Remove</button></span></div><p class="loc">' + esc(ruleLine(r)) + '</p></div>';
     }).join('');
     var wk = WEEK.map(function (dow) {
       var on = rl.days.indexOf(dow) > -1;
@@ -1080,15 +1079,13 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var hoursRows = hoursBlock;
     var capOpts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return '<option value="' + n + '"' + (rl.cap === n ? ' selected' : '') + '>' + n + (n === 1 ? ' person' : ' people') + '</option>'; }).join('');
     return '<section class="card"><h2>Other places</h2>' +
-      '<p class="muted">A studio, a park, anywhere else you teach. Pick the days and set the hours once. If one day is different, tap it. Clients book these places straight away, the same as your own studio. For a summer place, set the dates it runs.</p>' +
+      '<p class="muted">A studio, a park, anywhere else you teach. Pick the days and set the hours once. If one day is different, tap it. Clients book these places straight away, the same as your own studio.  When you stop, tap Remove.</p>' +
       (list ? '<div class="rules">' + list + '</div>' : '') +
       '<div class="panel" id="ruleform"><span class="lbl">' + (editing ? 'Edit place' : 'Add a place') + '</span>' +
       '<div class="field"><label for="s-name">Name</label><input id="s-name"' + data + ' data-field="studio" value="' + esc(rl.studio) + '" placeholder="Park, Studio X"></div>' +
       '<div class="field"><span class="lbl">Days</span><div class="chips wk">' + wk + '</div></div>' +
       hoursRows +
       '<div class="field"><label for="s-cap">People at the same time</label><select id="s-cap"' + data + ' data-field="cap">' + capOpts + '</select></div>' +
-      '<div class="row2"><div class="field"><label for="s-since">From date <span class="opt">(optional)</span></label><input id="s-since" type="date"' + data + ' data-field="since" value="' + esc(rl.since) + '"></div>' +
-      '<div class="field"><label for="s-until">Until date <span class="opt">(optional)</span></label><input id="s-until" type="date"' + data + ' data-field="until" value="' + esc(rl.until) + '"></div></div>' +
       (rl.err ? '<p class="err">' + esc(rl.err) + '</p>' : '') +
       '<div class="btns"><button type="button" class="btn primary" data-act="addRule">' + (editing ? 'Save changes' : 'Add place') + '</button>' + (editing ? '<button type="button" class="btn ghost" data-act="cancelRule">Cancel</button>' : '') + '</div></div></section>';
   }
@@ -1221,7 +1218,16 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
   }
   function tell(r, text) { ui.tell = { name: first(r.name), phone: r.phone, text: text }; }
   function tellBar() {
+    var many = ui.tells || [];
     var t = ui.tell;
+    var one = function (x, act, idx) {
+      return '<div class="field"><b>' + esc(x.name) + '</b><div class="btns"><a class="btn primary" href="' + esc(waLink(x.phone, x.text)) + '" target="_blank" rel="noopener" data-act="' + act + '"' + (idx !== undefined ? ' data-id="' + idx + '"' : '') + '>Message on WhatsApp</a></div></div>';
+    };
+    if (many.length) {
+      return '<section class="card tellbar"><h2>Tell ' + (many.length === 1 ? esc(many[0].name) : 'these ' + many.length + ' people') + '</h2><p class="muted">They only see it when they open the page. A message makes sure they know.</p>' +
+        many.map(function (x, i) { return one(x, 'sentMany', i); }).join('') +
+        '<div class="btns"><button type="button" class="btn ghost" data-act="dismissTell">Not now</button></div></section>';
+    }
     if (!t) return '';
     return '<section class="card tellbar"><h2>Tell ' + esc(t.name) + '</h2><p class="muted">They only see it when they open the page. A message makes sure they know.</p>' +
       '<div class="btns"><a class="btn primary" href="' + esc(waLink(t.phone, t.text)) + '" target="_blank" rel="noopener" data-act="sentTell">Message on WhatsApp</a>' +
@@ -1252,7 +1258,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       '<button type="button" data-act="mtab" data-v="setup" aria-pressed="' + (ui.mtab === 'setup') + '">Setup</button></div>';
     if (ui.mtab === 'schedule') return tabs + tellBar() + scheduleM();
     if (ui.mtab === 'setup') {
-      return tabs + blockForm() + standCard() + lengthsCard() + studioCard() + notifyCard() + pinCard() +
+      return tabs + tellBar() + blockForm() + standCard() + lengthsCard() + studioCard() + notifyCard() + pinCard() +
         '<div class="foot btns"><button type="button" class="btn secondary" data-act="lock">Lock</button></div>';
     }
     return tabs + newCard() + tellBar() + (ui.push && ui.push !== 'on' && ui.push !== 'unsupported' ? notifyCard() : '') + requestsM();
@@ -1464,7 +1470,8 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
     seenAll: function () { saveSeen(state.requests.filter(isBooking).map(function (r) { return r.id; })); render(); },
-    dismissTell: function () { ui.tell = null; render(); },
+    dismissTell: function () { ui.tell = null; ui.tells = []; render(); },
+    sentMany: function (id) { setTimeout(function () { (ui.tells || []).splice(Number(id), 1); render(); }, 400); },
     sentTell: function () { setTimeout(function () { ui.tell = null; render(); }, 400); },
     propYes: function (id) {
       var r = find(id), p = r && r.proposal; if (!p) return;
@@ -1542,7 +1549,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       r.days.forEach(function (d) { var k = hrs[d].from + '|' + hrs[d].to; cnt[k] = (cnt[k] || 0) + 1; if (!best || cnt[k] > cnt[best]) best = k; });
       var sh = best.split('|'), ov = {};
       r.days.forEach(function (d) { if (hrs[d].from + '|' + hrs[d].to !== best) ov[d] = true; });
-      ui.rule = { id: r.id, studio: r.studio, days: r.days.slice(), hours: hrs, shared: { from: sh[0], to: sh[1] }, over: ov, cap: r.cap, since: r.since || '', until: r.until || '', err: '' };
+      ui.rule = { id: r.id, studio: r.studio, days: r.days.slice(), hours: hrs, shared: { from: sh[0], to: sh[1] }, over: ov, cap: r.cap, err: '' };
       render();
       var f = document.getElementById('ruleform');
       if (f && f.scrollIntoView) f.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1551,7 +1558,6 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     addRule: function () {
       var rl = ui.rule, err = '';
       if (!rl.studio.trim()) err = 'Add the name of the place.';
-      else if (rl.since && rl.until && rl.until < rl.since) err = 'The until date must be after the from date.';
       else if (!rl.days.length) err = 'Pick at least one day.';
       else {
         rl.days.forEach(function (d) {
@@ -1571,8 +1577,6 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       if (err) { rl.err = err; render(); return; }
       var first0 = rl.hours[rl.days[0]];
       var rule = { id: old ? old.id : 's' + Date.now(), studio: rl.studio.trim(), days: rl.days.slice(), hours: JSON.parse(JSON.stringify(rl.hours)), from: first0.from, to: first0.to, cap: rl.cap };
-      if (rl.since) rule.since = rl.since;
-      if (rl.until) rule.until = rl.until;
       Object.keys(rule.hours).forEach(function (k) { if (rule.days.indexOf(Number(k)) < 0) delete rule.hours[k]; });
       if (old) {
         state.rules = state.rules.map(function (x) { return x.id === old.id ? rule : x; });
@@ -1583,13 +1587,33 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
       save(); ui.rule = newRule(); render(); toast(old ? 'Place updated' : 'Place added. Clients can book it now');
     },
     removeRule: function (id) {
-      var used = state.requests.some(function (r) {
-        return widOf(r) === id && (r.status === 'accepted' || r.status === 'pending' || r.status === 'proposed');
+      var rule = state.rules.filter(function (r) { return r.id === id; })[0];
+      if (!rule) return;
+      var today = iso(new Date());
+      var hits = state.requests.filter(function (r) {
+        return widOf(r) === id && (r.status === 'pending' || r.status === 'proposed' || (r.status === 'accepted' && sessionDate(r) >= today));
       });
-      if (used || state.standing.some(function (s) { return s.wid === id; })) { toast('This place still has booked sessions or weekly clients'); return; }
+      var weekly = state.standing.filter(function (x) { return x.wid === id; });
+      var msg = 'Remove ' + rule.studio + '?';
+      if (hits.length || weekly.length) {
+        msg += ' ' + (hits.length ? hits.length + (hits.length === 1 ? ' booked session' : ' booked sessions') : '') + (hits.length && weekly.length ? ' and ' : '') +
+          (weekly.length ? weekly.length + (weekly.length === 1 ? ' weekly client' : ' weekly clients') : '') + ' there will be cancelled.';
+      }
+      if (!sure(msg)) return;
+      var tells = [];
+      hits.forEach(function (r) {
+        var line = r.start ? sessLine(sessionDate(r), r.start, r.fdur).replace(/ \(.*\)$/, '') : wantLine(r);
+        r.status = 'cancelled'; r.cancelledBy = 'michela'; r.upd = Date.now();
+        if (r.phone) tells.push({ name: first(r.name), phone: r.phone, text: 'Hi ' + first(r.name) + ', sorry, I have to cancel your session at ' + rule.studio + ' on ' + line + '. ' + rule.studio + ' is not running any more. You are welcome to book another time.' });
+      });
+      weekly.forEach(function (x) {
+        if (x.phone) tells.push({ name: first(x.name), phone: x.phone, text: 'Hi ' + first(x.name) + ', just so you know, the weekly session at ' + rule.studio + ' is not running any more.' });
+      });
+      state.standing = state.standing.filter(function (x) { return x.wid !== id; });
       if (ui.stand.wid === id) ui.stand = newStand();
       state.rules = state.rules.filter(function (r) { return r.id !== id; });
       Object.keys(state.open).forEach(function (k) { if (k.indexOf(id + '|') === 0) delete state.open[k]; });
+      ui.tells = tells;
       save(); render(); toast('Place removed');
     },
     toggleStudioDate: function (id, v) {
