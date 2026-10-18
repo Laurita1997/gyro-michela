@@ -191,8 +191,6 @@ Deno.serve(async (req: Request) => {
         if (bad) return { abort: true, err: bad };
         const loc = pl.name;
         const direct = true;
-        const upcoming = (d.requests || []).filter((x: any) => samePhone(x.phone, phone) && x.status === "accepted" && (x.fdate || x.date) >= todayISO()).length;
-        if (upcoming >= 4) return { abort: true, err: "You already have 4 upcoming sessions. Please cancel one or ask Michela." };
         created = {
           id: "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
           name, phone, email: clip(r.email, 120).trim(), date: r.date, wid, loc,
