@@ -217,6 +217,8 @@ Deno.serve(async (req: Request) => {
           if (!["pending", "proposed", "accepted"].includes(r.status)) return { abort: true, err: "Can't cancel this one." };
           if (r.status === "accepted") {
             const nowV = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Vienna" }));
+            const todayV = nowV.getFullYear() + "-" + String(nowV.getMonth() + 1).padStart(2, "0") + "-" + String(nowV.getDate()).padStart(2, "0");
+            if (String(r.fdate || r.date) <= todayV) return { abort: true, err: "This session is today. Please contact Michela directly to cancel." };
             const [yy, mm, dd] = String(r.fdate || r.date).split("-").map(Number);
             const [hh, mi] = String(r.start).split(":").map(Number);
             r.late = (new Date(yy, mm - 1, dd, hh, mi).getTime() - nowV.getTime()) / 3600000 < 24;

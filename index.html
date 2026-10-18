@@ -590,10 +590,15 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var p = sessionDate(r).split('-').map(Number), t = String(r.start).split(':').map(Number);
     return (new Date(p[0], p[1] - 1, p[2], t[0], t[1]).getTime() - nowV.getTime()) / 3600000;
   }
+  function sameDay(r) {
+    var n = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Vienna' }));
+    return sessionDate(r) <= iso(n);
+  }
   function cancelBlock(r, label) {
+    if (r.status === 'accepted' && sameDay(r)) return '<p class="muted">This session is today. To cancel it, please contact Michela directly.</p>';
     if (ui.cancelAsk !== r.id) return '<button type="button" class="btn secondary" data-act="askCancel" data-id="' + r.id + '">' + label + '</button>';
     if (r.status === 'accepted' && hoursUntil(r) < 24) {
-      return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. This is late notice, please let Michela know too. Cancel anyway?</p>' +
+      return '<div class="cancelask"><p class="line">This session starts in less than 24 hours. This is late notice. Michela gets a message, but please let her know too. Cancel anyway?</p>' +
         '<div class="btns"><button type="button" class="btn primary" data-act="cancel" data-id="' + r.id + '">Yes, cancel</button>' +
         '<button type="button" class="btn secondary" data-act="keepCancel">Keep it</button></div></div>';
     }
