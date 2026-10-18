@@ -620,7 +620,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     } else if (r.status === 'accepted') {
       status = pill('ok', 'Confirmed');
       body = '<p class="line">' + esc(sessLine(sessionDate(r), r.start, r.fdur)) + '</p>' + where(locOfReq(r)) + (r.reply ? '<p class="quote">' + esc(r.reply) + '</p>' : '');
-      actions = '<a class="btn secondary" href="' + gcal(r) + '" download="gyro-michela.ics">Add to my calendar</a>' + cancelBlock(r, 'Cancel session');
+      actions = cancelBlock(r, 'Cancel session');
     } else if (r.status === 'proposed') {
       var p = r.proposal;
       status = pill('info', 'Michela suggests another time');
