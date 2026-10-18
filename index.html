@@ -202,6 +202,8 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .cell.sc.has { background: var(--accent-soft); color: var(--accent); }
 .cell.sc.shut { background: var(--bad-soft); color: var(--bad); }
 .cell.sc.sel { background: var(--accent); color: var(--accent-ink); }
+.cell.sc.today { box-shadow: inset 0 0 0 2px var(--accent); }
+.cell.sc.today.sel { box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--accent); }
 .cell .cnt { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 10px; font-weight: 700; line-height: 1.3; padding: 0 5px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); }
 .cell.sel .cnt { background: var(--accent-ink); color: var(--accent); }
 .round { width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 700 22px var(--font-body); cursor: pointer; line-height: 1; }
@@ -1084,6 +1086,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         if (wholeBlocked(x)) cls = 'shut';
       }
       if (x === ui.ssel) cls += ' sel';
+      if (x === t0) cls += ' today';
       cells += '<button type="button" class="cell sc ' + cls + '"' + (inRange ? '' : ' disabled') + ' data-act="schedDay" data-v="' + x + '" aria-label="' + esc(fmtDate(x)) + '">' + parseISO(x).getDate() + (n ? '<i class="cnt">' + n + '</i>' : '') + '</button>';
     });
     return '<section class="card"><div class="cal-head"><h2>' + esc(monthLabel(ui.sm)) + '</h2><div class="btns">' +
@@ -1247,7 +1250,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var k = ui.push || 'unknown', body;
     if (k === 'on') {
       body = '<p class="muted">Notifications are on for this phone. You get one when a new request or booking comes in, and when someone cancels.</p>' +
-        '<div class="btns"><button type="button" class="btn secondary" data-act="testPush">Send a test</button><button type="button" class="btn ghost" data-act="disablePush">Turn off</button></div>';
+        '<div class="btns"><button type="button" class="btn ghost" data-act="disablePush">Turn off</button></div>';
     } else if (k === 'install') {
       body = '<p class="muted">On an iPhone, first add this page to your home screen: tap the Share button, then Add to Home Screen. Open Gyro from the new icon and come back to this page. Then you can turn notifications on.</p>';
     } else if (k === 'denied') {
