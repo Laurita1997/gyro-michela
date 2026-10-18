@@ -197,6 +197,13 @@ input[type="time"]::-webkit-date-and-time-value, input[type="date"]::-webkit-dat
 .cell.full { background: var(--line); color: var(--ink-soft); }
 .cell.free { background: var(--hl); color: var(--hl-ink); cursor: pointer; }
 .cell.sel { background: var(--accent); color: var(--accent-ink); }
+.cell.sc { position: relative; height: 48px; cursor: pointer; }
+.cell.sc.plain { background: var(--ground); }
+.cell.sc.has { background: var(--accent-soft); color: var(--accent); }
+.cell.sc.shut { background: var(--bad-soft); color: var(--bad); }
+.cell.sc.sel { background: var(--accent); color: var(--accent-ink); }
+.cell .cnt { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 10px; font-weight: 700; line-height: 1.3; padding: 0 5px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); }
+.cell.sel .cnt { background: var(--accent-ink); color: var(--accent); }
 .round { width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid var(--ink); background: transparent; color: var(--ink); font: 700 22px var(--font-body); cursor: pointer; line-height: 1; }
 .round:disabled { opacity: 0.35; cursor: default; }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 6px; background: var(--hl); vertical-align: -1px; }
@@ -1006,7 +1013,7 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     return h;
   }
 
-  function scheduleM() {
+  function scheduleList() {
     var rows = allDates().filter(function (d) {
       return state.blocks.some(function (b) { return b.date === d; }) ||
         windowsFor(d).some(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
@@ -1014,7 +1021,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
     var groups = groupWeeks(rows, function (d) { return d; });
     if (!groups.length) return '<div class="card"><p>Nothing scheduled yet.</p></div>';
     return groups.map(function (g) {
-      return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(function (d) {
+      return '<section><p class="wkh">' + g.label + '</p>' + g.items.map(schedDay).join('') + '</section>';
+    }).join('');
+  }
+  function schedDay(d) {
         var pc = state.requests.filter(function (r) { return r.status === 'pending' && r.date === d; }).length;
         var wins = windowsFor(d).filter(function (w) { return w.open || sessionsIn(d, w).length || pendingFor(d, w); });
         var entries = [], empty = [];
@@ -1043,8 +1053,37 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         }).join('');
         return '<div class="daycard"><div class="dayrow"><b>' + fmtDate(d) + '</b>' + (pc ? pill('pending', pc + (pc > 1 ? ' requests' : ' request')) : '') + '<button type="button" class="link push" data-act="quickClose" data-v="' + d + '">Close time</button></div>' +
           body + (closed ? '<ul class="items">' + closed + '</ul>' : '') + '</div>';
-      }).join('') + '</section>';
-    }).join('');
+  }
+  var SCHED_CAL = /[?&]cal=1\b/.test(location.search);
+  function scheduleCal() {
+    var t0 = iso(new Date()), hz = horizon();
+    if (!ui.sm) ui.sm = monthKey(t0);
+    var dates = monthDates(ui.sm), minM = monthKey(t0), maxM = monthKey(hz);
+    if (!ui.ssel || ui.ssel < t0) ui.ssel = t0;
+    var first = parseISO(dates[0]).getDay(), lead = (first + 6) % 7, cells = '', i;
+    for (i = 0; i < lead; i++) cells += '<span></span>';
+    dates.forEach(function (x) {
+      var inRange = x >= t0 && x <= hz, cls = 'off', n = 0;
+      if (inRange) {
+        windowsFor(x).forEach(function (w) { n += sessionsIn(x, w).length; });
+        cls = n ? 'has' : 'plain';
+        if (wholeBlocked(x)) cls = 'shut';
+      }
+      if (x === ui.ssel) cls += ' sel';
+      cells += '<button type="button" class="cell sc ' + cls + '"' + (inRange ? '' : ' disabled') + ' data-act="schedDay" data-v="' + x + '" aria-label="' + esc(fmtDate(x)) + '">' + parseISO(x).getDate() + (n ? '<i class="cnt">' + n + '</i>' : '') + '</button>';
+    });
+    return '<section class="card"><div class="cal-head"><h2>' + esc(monthLabel(ui.sm)) + '</h2><div class="btns">' +
+      '<button type="button" class="round" data-act="schedPrev" aria-label="Previous month"' + (ui.sm <= minM ? ' disabled' : '') + '>&lsaquo;</button>' +
+      '<button type="button" class="round" data-act="schedNext" aria-label="Next month"' + (ui.sm >= maxM ? ' disabled' : '') + '>&rsaquo;</button></div></div>' +
+      '<div class="cal-grid"><span class="cal-wd">Mo</span><span class="cal-wd">Tu</span><span class="cal-wd">We</span><span class="cal-wd">Th</span><span class="cal-wd">Fr</span><span class="cal-wd">Sa</span><span class="cal-wd">Su</span>' + cells + '</div>' +
+      '<p class="muted">The number is how many sessions are booked that day. Red days are closed.</p></section>' + schedDay(ui.ssel);
+  }
+  function scheduleM() {
+    if (!SCHED_CAL) return scheduleList();
+    var cal = ui.sview === 'cal';
+    return '<div class="switch" role="group" aria-label="Schedule view">' +
+      '<button type="button" data-act="schedView" data-v="list" aria-pressed="' + !cal + '">List</button>' +
+      '<button type="button" data-act="schedView" data-v="cal" aria-pressed="' + cal + '">Calendar</button></div>' + (cal ? scheduleCal() : scheduleList());
   }
 
   function studioCard() {
@@ -1470,6 +1509,10 @@ body.v-d, body.v-e { --pending: #7A4E00; --pending-soft: #FFF1D6; --ok: #0B5E55;
         .catch(function (e) { ui.pushErr = (e && e.message) || 'Test failed.'; render(); });
     },
     seenAll: function () { saveSeen(state.requests.filter(isBooking).map(function (r) { return r.id; })); render(); },
+    schedView: function (id, v) { ui.sview = v; render(); },
+    schedDay: function (id, v) { ui.ssel = v; render(); },
+    schedPrev: function () { var p = ui.sm.split('-').map(Number); ui.sm = iso(new Date(p[0], p[1] - 2, 1)).slice(0, 7); render(); },
+    schedNext: function () { var p = ui.sm.split('-').map(Number); ui.sm = iso(new Date(p[0], p[1], 1)).slice(0, 7); render(); },
     dismissTell: function () { ui.tell = null; ui.tells = []; render(); },
     sentMany: function (id) { setTimeout(function () { (ui.tells || []).splice(Number(id), 1); render(); }, 400); },
     sentTell: function () { setTimeout(function () { ui.tell = null; render(); }, 400); },
