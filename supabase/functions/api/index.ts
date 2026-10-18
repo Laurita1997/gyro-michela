@@ -81,12 +81,12 @@ async function checkCode(code: string) {
 
 const toMin = (t: string) => { const p = String(t).split(":").map(Number); return p[0] * 60 + p[1]; };
 const fromMin = (n: number) => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
-const HOME_FROM = "09:00", HOME_TO = "21:00";
+const HOME_FROM = "08:00", HOME_TO = "20:00";
 
 // returns a message when Michela's own studio cannot take this booking, else ""
 function homeConflict(d: any, date: string, start: string, dur: number): string {
   const s = toMin(start), e = s + dur;
-  if (s < toMin(HOME_FROM) || e > toMin(HOME_TO)) return "That is outside Michela's hours (09:00 to 21:00).";
+  if (s < toMin(HOME_FROM) || e > toMin(HOME_TO)) return "That is outside Michela's hours (08:00 to 20:00).";
   const buf = 15;
   const dow = new Date(date + "T12:00:00Z").getUTCDay();
   const sess: { a: number; z: number }[] = [];
